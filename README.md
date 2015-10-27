@@ -16,7 +16,9 @@ The strength of the data is its extensiveness and its events classification algo
 
 It is also free which we like, (a lot!). It also has a lot of [documentation](http://gdeltproject.org/data.html#documentation), which we also like, (also a lot!).
 
-Concerns<sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and its opacity. While queries for exploration and data download can be executed quickly using Google’s BigQuery, it was the experience of the authors the daily free quota on using this service runs out after about 5 successful queries. To reduce the total size of analysis, we limit the scope of our analysis to events in the US in the past year for the 3 events code listed below in The solution. The dataset’s opacity lies in source and algorithm verification: GDELT does not release a list of its sources<sup>[3](#sourceurls)</sup> nor the algorithms it uses to classify each event.
+Concerns<sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and its opacity. The dataset’s opacity lies in source and algorithm verification: GDELT does not release a list of its sources<sup>[3](#sourceurls)</sup> nor the algorithms it uses to classify each event.
+
+While queries for exploration and data download can be executed quickly using Google’s BigQuery, it was the experience of the authors the daily free quota on using this service runs out after about 5 successful queries. We limit the scope of our analysis to events in the US in the past year for the 3 events code listed below in The solution.
 
 ### The solution and methodology
 
