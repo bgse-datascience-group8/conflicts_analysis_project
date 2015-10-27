@@ -2,9 +2,11 @@
 
 ### The question and the problem it concerns
 
-How do political and social conflicts (such as a protest, demands and threats) affect the likelihood other political conflict event nearby, in space or time?
+Are political and social events correlated with similar types of events nearby, in space or time?
 
-The answer to this question may affect how government and society can address, prepare for and possibly thwart conflict. Conflicts require reactionary government resources, namely police and administrative forces. Understanding of the likelihood of conflict events may enable the alleviation of the negative externalities of conflict, such as violence.
+The answer to this question may affect how government and society can address and prepare for such events and thwart conflict-type events. Conflicts require reactionary government resources, namely police and administrative forces. Understanding of the likelihood of conflict events may enable the alleviation of the negative externalities such as violence.
+
+**We will study specifically the time-space corrlations among "conflict" types of events such as protests, threats and demands.**
 
 ### The dataset
 
@@ -31,7 +33,7 @@ We also plan to explore and visualize a time-lapse spread of conflict over time 
 
 ### Example data
 
-From 26 October 2015, querying<sup>[5](#see-scripts)</sup> for "protest"-type events occurring with Actor1 and Actor2 having a country code in the United States and having some ad-hoc definition of "signficance" (NumArticles > 9) returned 3 results:
+Querying<sup>[5](#see-scripts)</sup> for "protest"-type events with at least 10 article references occurring in the US on 26 October 2015, returned 3 results:
 
 * [Some farmers upset that hydroponic crops carry organic label](http://www.sfgate.com/news/science/article/Some-Vermont-farmers-to-protest-possible-organic-6590183.php)
 
