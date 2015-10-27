@@ -18,7 +18,7 @@ Concerns <sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and op
 
 ### The solution and methodology
 
-Using the GDELT dataset, we will identify those events coded as “threaten”, “demand” or “protest” and quantify their relationship to other events in terms of time and location. Once this quantification has been made, we will analyze how one event impacts the probability of other events of the same type in nearby locations or in the days directly following the original event.
+Using the GDELT dataset, we will identify those events coded as “threaten”, “demand” or “protest” and quantify their relationship to other events in terms of time and location. Once this quantification has been made, we can analyze how one event impacts the probability of other events of the same type in nearby locations or in the days directly following the original event.
 
 The hypothesis is that there is a higher probability of events happening nearby in time and distance to any one input event.
 
