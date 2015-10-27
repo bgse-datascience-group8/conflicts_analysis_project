@@ -31,9 +31,9 @@ We also plan to explore and visualize a time-lapse spread of conflict over time 
 
 *Footnotes*
 
-<a name="341mill">[1] According to the Google Big Query metadata on their events database, there are actually over 341 million rows in the events database. In our limited querying we have found this is the result of recording the same event when any one value changes, for example when an event is associated with 2 different locations.</a>
+[1] <a name="341mill">According to the Google Big Query metadata on their events database, there are actually over 341 million rows in the events database. In our limited querying we have found this is the result of recording the same event when any one value changes, for example when an event is associated with 2 different locations.</a>
 
-<a name="gdelt-weaknesses" href="http://politicalviolenceataglance.org/2014/02/20/raining-on-the-parade-some-cautions-regarding-the-global-database-of-events-language-and-tone-dataset/">[2] Article analyzing weaknesses in GDELT dataset</a>
+[2] <a name="gdelt-weaknesses" href="http://politicalviolenceataglance.org/2014/02/20/raining-on-the-parade-some-cautions-regarding-the-global-database-of-events-language-and-tone-dataset/">Article analyzing weaknesses in GDELT dataset</a>
 
 [3] <a name="sourceurls">It does however include a source url per event, just not a distinct list of news sources from which it collects events</a>
 
