@@ -45,7 +45,8 @@ Querying<sup>[5](#see-scripts)</sup> for "protest"-type events with at least 10 
 
 
 
-**Footnotes**
+
+<br />
 <br />
 <sub>
 [1] <a name="341mill">According to the Google Big Query metadata on their events database, there are actually over 341 million rows in the events database. In our limited querying we have found this is the result of recording the same event when any one value changes, for example when an event is associated with 2 different locations.</a>
