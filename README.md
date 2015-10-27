@@ -18,11 +18,11 @@ Concerns <sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and op
 
 ### The solution and methodology
 
-Using the GDELT dataset, we will identify those events coded as “threaten”, “demand” or “protest” and quantify their relationship to other events in terms of time and location. Once this quantification has been made, we can analyze how one event impacts the probability of other events of the same type in nearby locations or in the days directly following the original event.
+Using the GDELT dataset, we will identify those events coded as "threaten", "demand" or "protest" and quantify their relationship to other events in terms of time and location. Once this quantification has been made, we can analyze how one event impacts the probability of other events of the same type in nearby locations or in the days directly following the original event.
 
-The hypothesis is that there is a higher probability of events happening nearby in time and distance to any one input event.
+The hypothesis is there will be a higher probability of events happening nearby in time or distance or both to any other given event.
 
-To test the hypothesis that the distribution of the distances (D1, … , Dm) from some event (E1) to all other events from the same day through the following week (E2, … , Em) is a distribution with greater probability for low values of D.
+To test the hypothesis that the distribution of the distances (D1, ... , Dm) from some event (E1) to all directly following events<sup>[4](#directly-following-events)</sup> (E2, ... , Em) is a distribution with greater probability for low values of D.
 
 ### Additional Exploration
 
@@ -36,3 +36,5 @@ We also plan to explore and visualize a time-lapse spread of conflict over time 
 <a name="gdelt-weaknesses" href="http://politicalviolenceataglance.org/2014/02/20/raining-on-the-parade-some-cautions-regarding-the-global-database-of-events-language-and-tone-dataset/">[2] Article analyzing weaknesses in GDELT dataset</a>
 
 [3] <a name="sourceurls">It does however include a source url per event, just not a distinct list of news sources from which it collects events</a>
+
+[4] <a name="directly-following-events">Our initial definition of *directly following events* will be those events from the same day through the following week</a>
