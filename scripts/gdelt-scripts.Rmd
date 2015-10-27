@@ -14,6 +14,7 @@ colnames(data) <- colHeaders
 protest_events <- subset(data, EventRootCode == 14 & Actor1CountryCode == 'USA' & Actor2CountryCode == 'USA')
 (num_protest_events <- nrow(protest_events))
 protest_events <- subset(protest_events, NumArticles > 9)
+(num_protest_events <- nrow(protest_events))
 protest_events[,'SOURCEURL']
 ```
 
