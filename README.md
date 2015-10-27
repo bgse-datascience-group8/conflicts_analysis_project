@@ -2,7 +2,7 @@
 
 ### The question and the problem it concerns
 
-How do political and social conflicts (such as a protest, demands and threats) correlate to the probability of another political conflict event nearby, in space or time?
+How do political and social conflicts (such as a protest, demands and threats) affect the likelihood other political conflict event nearby, in space or time?
 
 The answer to this question may affect how government and society can address, prepare for and possibly thwart conflict. Conflicts requires reactionary government resources, namely police and administrative forces. Understanding of the likelihood of conflict events may enable the alleviation of the negative externalities of conflict, such as violence.
 
@@ -18,7 +18,7 @@ Concerns <sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and op
 
 ### The solution and methodology
 
-Using the GDELT dataset, we will identify those events coded as “threaten”, “demand” or “protest” and quantify other events in relation as time and location. Once this quantification has been made, we will relate and see how does one event impact the probability of other events of the same type
+Using the GDELT dataset, we will identify those events coded as “threaten”, “demand” or “protest” and quantify their relationship to other events in terms of time and location. Once this quantification has been made, we will analyze how one event impacts the probability of other events of the same type in nearby locations or in the days directly following the original event.
 
 The hypothesis is that there is a higher probability of events happening nearby in time and distance to any one input event.
 
@@ -31,8 +31,8 @@ We also plan to explore and visualize a time-lapse spread of conflict over time 
 
 *Footnotes*
 
-[1] <a name="341mill">According to the Google Big Query metadata on their events database, there are actually over 341 million rows in the events database. In our limited querying we have found this is the result of recording the same event when any one value changes, for example when an event is associated with 2 different locations.</a>
+<a name="341mill">[1] According to the Google Big Query metadata on their events database, there are actually over 341 million rows in the events database. In our limited querying we have found this is the result of recording the same event when any one value changes, for example when an event is associated with 2 different locations.</a>
 
-[2] <a name="gdelt-weaknesses" href="http://politicalviolenceataglance.org/2014/02/20/raining-on-the-parade-some-cautions-regarding-the-global-database-of-events-language-and-tone-dataset/">Article analyzing weaknesses in GDELT dataset</a>
+<a name="gdelt-weaknesses" href="http://politicalviolenceataglance.org/2014/02/20/raining-on-the-parade-some-cautions-regarding-the-global-database-of-events-language-and-tone-dataset/">[2] Article analyzing weaknesses in GDELT dataset</a>
 
 [3] <a name="sourceurls">It does however include a source url per event, just not a distinct list of news sources from which it collects events</a>
