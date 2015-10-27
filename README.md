@@ -4,17 +4,17 @@
 
 How do political and social conflicts (such as a protest, demands and threats) affect the likelihood other political conflict event nearby, in space or time?
 
-The answer to this question may affect how government and society can address, prepare for and possibly thwart conflict. Conflicts requires reactionary government resources, namely police and administrative forces. Understanding of the likelihood of conflict events may enable the alleviation of the negative externalities of conflict, such as violence.
+The answer to this question may affect how government and society can address, prepare for and possibly thwart conflict. Conflicts require reactionary government resources, namely police and administrative forces. Understanding of the likelihood of conflict events may enable the alleviation of the negative externalities of conflict, such as violence.
 
 ### The dataset
 
 [GDELT: Global Data on Events, Location and Tone](http://gdeltproject.org/data.html) is a dataset of 200 million geolocated events spanning 35 years <sup>[1](#341mill)</sup>. Data collected are daily from a variety of international news organizations and categorized using their [Conflict and Mediation Event Observations Event and Actor Codebook (CAMEO) coding system](http://data.gdeltproject.org/documentation/CAMEO.Manual.1.1b3.pdf).
 
-The strength of the data is how exhaustive it is (that is, having a large pool of sources) and its events classification algorithms. From initial exploration, events are identified through an initial source, and subsequent articles may be identified as relating the same event. Such articles are counted as +1 to the NumArticles column of the original event. Ergo, the significance of an event can be quantified through the events table columns NumArticles referencing the event as well as NumMentions. The data is also categorized according the actors and event types described in the CAMEO coding system.
+The strength of the data is its extensiveness (that is, having a large pool of sources) and its events classification algorithms. Events are identified through an initial source, and subsequent articles may be identified as relating the same event. Such articles are counted as +1 to the NumArticles column of the original event. Ergo, the significance of an event can be quantified using the columns `NumArticles` referencing the event as well as `NumMentions`. The data is also categorized according the actors and event types described in the CAMEO coding system.
 
-It is also all free which we like, a lot. It also has a lot of [documentation](http://gdeltproject.org/data.html#documentation), which we also like a lot.
+It is also free which we like, a lot. It also has a lot of [documentation](http://gdeltproject.org/data.html#documentation), which we also like a lot.
 
-Concerns <sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and opacity. While offering insights quickly, through Google’s BigQuery, it was the experience of the authors the daily  free quota on using this service runs out after about 5 successful queries. To reduce the total size of analysis, we limit the scope of our analysis to events in the US in the past year for the 3 events code listed below in The solution. The dataset’s opacity lies in source and algorithm verification: GDELT does not release a list of its sources <sup>[3](#sourceurls)</sup> nor the algorithms it uses to classify each event.
+Concerns <sup>[2](#gdelt-weaknesses)</sup> about the dataset are its size and its opacity. While offering insights quickly, through Google’s BigQuery, it was the experience of the authors the daily  free quota on using this service runs out after about 5 successful queries. To reduce the total size of analysis, we limit the scope of our analysis to events in the US in the past year for the 3 events code listed below in The solution. The dataset’s opacity lies in source and algorithm verification: GDELT does not release a list of its sources <sup>[3](#sourceurls)</sup> nor the algorithms it uses to classify each event.
 
 ### The solution and methodology
 
@@ -22,11 +22,23 @@ Using the GDELT dataset, we will identify those events coded as "threaten", "dem
 
 The hypothesis is there will be a higher probability of events happening nearby in time or distance or both to any other given event.
 
-To test the hypothesis that the distribution of the distances (D1, ... , Dm) from some event (E1) to all directly following events<sup>[4](#directly-following-events)</sup> (E2, ... , Em) is a distribution with greater probability for low values of D.
+We will test the hypothesis that the distribution of the distances (D1, ... , Dm) from some event (E1) to all directly following events<sup>[4](#directly-following-events)</sup> (E2, ... , Em) is a distribution with greater probability for low values of D.
 
 ### Additional Exploration
 
 We also plan to explore and visualize a time-lapse spread of conflict over time and how this determines the actions taken by the government or regulatory authorities. 
+
+
+### Example data
+
+From 26 October 2015, querying<sup>[5](#see-scripts)</sup> for "protest"-type events occurring with Actor1 and Actor2 having a country code in the United States and having some ad-hoc definition of "signficance" (NumArticles > 9) returned 3 results:
+
+* [Some farmers upset that hydroponic crops carry organic label](http://www.sfgate.com/news/science/article/Some-Vermont-farmers-to-protest-possible-organic-6590183.php)
+
+* [Demonstrators set up mock drill to protest gas pipeline](http://marcellus.com/news/id/130770/demonstrators-set-up-mock-drill-to-protest-gas-pipeline/)
+
+* [Letter: Support Partners for Education Dem candidates](http://www.mainlinemedianews.com/articles/2015/10/25/main_line_suburban_life/news/doc5629431998829663782224.txt)
+
 
 
 **Footnotes**
@@ -46,3 +58,7 @@ We also plan to explore and visualize a time-lapse spread of conflict over time 
 <sub>
 [4] <a name="directly-following-events">Our initial definition of *directly following events* will be those events from the same day through the following week</a>
 </sub>
+<sub>
+[5] <a name="see-scripts">For exact queries, see scripts in the [scripts/](scripts/) directory in this repository</a>
+</sub>
+
