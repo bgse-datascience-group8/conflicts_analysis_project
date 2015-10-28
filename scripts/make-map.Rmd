@@ -1,0 +1,14 @@
+---
+title: "Map Events"
+output: html_document
+---
+
+```{r}
+#install.packages("RMySQL")
+library(RMySQL)
+
+con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
+res <- dbSendQuery(con, "select * from events where EventRootCode is not NULL")
+data <- dbFetch(res)
+
+```
