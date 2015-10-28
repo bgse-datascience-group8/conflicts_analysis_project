@@ -6,9 +6,30 @@ output: html_document
 ```{r}
 #install.packages("RMySQL")
 library(RMySQL)
+library(ggmap)
+library(grid)
 
 con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
 res <- dbSendQuery(con, "select * from events where EventRootCode is not NULL")
-data <- dbFetch(res)
+data <- dbFetch(res, n = -1)
 
+data$lat <- data$ActionGeo_Lat
+data$lon <- data$ActionGeo_Long
+
+# Check out the distribution
+# Played with different intervals from 0.1, 0.05, 0.01 to get a reasonable subset
+(qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.01)))
+data_subset <- subset(data, NumMentions > qs['98%'])
+# nrow(data_subset) # -> 71470
+
+# Make sure we have a reasonable distribution
+meanLogNumMentions <- mean(log(data_subset$NumMentions))
+hist(log(data_subset$NumMentions))
+data_subset$logNumMentions <- log(data_subset$NumMentions)
+
+map <- NULL
+mapWorld <- borders("world", colour="gray40", fill="gray40")
+map <- ggplot() + mapWorld
+map <- map + geom_point(data = data_subset, aes(x = lon, y = lat, size = logNumMentions))
+map
 ```
