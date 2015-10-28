@@ -3,7 +3,9 @@ title: "Map Events"
 output: html_document
 ---
 
-```{r}
+Below is initial geographic exploration of GDELT data for the past 20 days. Subset where EventRootCode is not null. Additional subsetting is done to limit the number of results based on a rough calculation of significance
+
+```{r, warning=FALSE}
 #install.packages("RMySQL")
 library(RMySQL)
 library(ggmap)
@@ -18,7 +20,7 @@ data$lon <- data$ActionGeo_Long
 
 # Check out the distribution
 # Played with different intervals from 0.1, 0.05, 0.01 to get a reasonable subset
-(qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.01)))
+qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.01))
 data_subset <- subset(data, NumMentions > qs['98%'])
 # nrow(data_subset) # -> 71470
 
@@ -31,5 +33,20 @@ map <- NULL
 mapWorld <- borders("world", colour="gray40", fill="gray40")
 map <- ggplot() + mapWorld
 map <- map + geom_point(data = data_subset, aes(x = lon, y = lat, size = logNumMentions))
+map
+```
+
+### Visualizing Connections between actors in Events
+
+```{r, warning=FALSE}
+qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.005))
+nrow(data_subset) <- subset(data, NumMentions > qs['99.5%'])
+data_subset <- subset(data_subset, !(data_subset$Actor1Geo_Lat == data_subset$Actor2Geo_Lat))
+nrow(data_subset)
+
+map <- NULL
+mapWorld <- borders("world", colour="gray40", fill="gray40")
+map <- ggplot() + mapWorld
+map <- map + geom_segment(aes(y = data_subset$Actor1Geo_Lat, x = data_subset$Actor1Geo_Long, yend = data_subset$Actor2Geo_Lat, xend = data_subset$Actor2Geo_Long))
 map
 ```
