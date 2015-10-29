@@ -4,16 +4,16 @@ library(ggmap)
 library(grid)
 
 shinyServer(function(input, output) {
-  output$significanceMap <- renderPlot({
-    con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
-    res <- dbSendQuery(con, "select * from events where EventRootCode is not NULL and SQLDATE > 20151021")
-    data <- dbFetch(res, n = -1)
+  con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
 
+  output$significanceMap <- renderPlot({
+
+    res <- dbSendQuery(con, paste0("select * from ", input$eventType))
+    data <- dbFetch(res, n = -1)
     # Check out the distribution
     # Played with different intervals from 0.1, 0.05, 0.01 to get a reasonable subset
     qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.01))
     data_subset <- subset(data, NumMentions > qs['99%'])
-    # nrow(data_subset) # -> 71470
 
     # Make sure we have a reasonable distribution
     meanLogNumMentions <- mean(log(data_subset$NumMentions))
@@ -22,8 +22,10 @@ shinyServer(function(input, output) {
 
     map <- NULL
     mapWorld <- borders("world", colour="gray40", fill="gray40")
-    map <- get_map('Seattle', zoom = input$mapZoom, maptype = 'satellite')
-    map <- ggmap(map) + geom_point(data = data_subset, aes(x = ActionGeo_Long, y = ActionGeo_Lat, size = logNumMentions), colour = 'orange')
+    map <- get_map(input$centerMapLocation, zoom = input$mapZoom, maptype = 'satellite')
+    map <- ggmap(map, extent = 'panel') + 
+      geom_point(data = data_subset, aes(x = ActionGeo_Long, y = ActionGeo_Lat, size = logNumMentions), colour = 'orange')
+
     map
   })
 })
