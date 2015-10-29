@@ -5,14 +5,14 @@ output: html_document
 
 Below is initial geographic exploration of GDELT data for the past 20 days. Subset where EventRootCode is not null. Additional subsetting is done to limit the number of results based on a rough calculation of significance
 
-```{r, warning=FALSE}
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
 #install.packages("RMySQL")
 library(RMySQL)
 library(ggmap)
 library(grid)
 
 con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
-res <- dbSendQuery(con, "select * from events where EventRootCode is not NULL")
+res <- dbSendQuery(con, "select * from events where EventRootCode is not NULL and SQLDATE > 20151021")
 data <- dbFetch(res, n = -1)
 
 # Check out the distribution
@@ -35,9 +35,9 @@ map
 
 ### Visualizing Connections between actors in Events
 
-```{r, warning=FALSE}
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
 qs <- quantile(data$NumMentions, probs = seq(0, 1, 0.005))
-nrow(data_subset) <- subset(data, NumMentions > qs['99.5%'])
+data_subset <- subset(data, NumMentions > qs['99.5%'])
 data_subset <- subset(data_subset, !(data_subset$Actor1Geo_Lat == data_subset$Actor2Geo_Lat))
 nrow(data_subset)
 
