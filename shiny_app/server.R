@@ -4,7 +4,11 @@ library(ggmap)
 library(grid)
 
 shinyServer(function(input, output) {
-  con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
+  con <- dbConnect(RMySQL::MySQL(),
+    dbname = "gdelt",
+    host = "bgseds-group8-rds.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
+    user = "group8",
+    password = Sys.getenv("DB_PASSWORD"))
 
   output$significanceMap <- renderPlot({
     res <- dbSendQuery(con, paste0("select * from ", input$eventType))

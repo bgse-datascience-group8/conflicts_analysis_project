@@ -1,12 +1,3 @@
----
-title: "GDelt Scripts"
-output: html_document
----
-
-## Load daily data into R
-
-```{r}
-#install.packages("RMySQL")
 library(RMySQL)
 
 # Had to add the following to ~/.my.cnf before this will work:
@@ -45,19 +36,7 @@ for (nday in 1:ndays_into_past) {
   
   print(paste0('Starting database write for October ', day))
   dbWriteTable(con, "events", data, append = TRUE)
+  unlink(filename)
+  unlink(zip_filename)
   print(paste0('Done processing October ', day))
 }
-
-res <- dbSendQuery(con, "select count(*) from events")
-dbFetch(res)
-# 1.6 million rows for 10 days
-```
-
-
-
-# WARNING: HERE BE DRAGONS
-
-```{r}
-# Reset table / Delets all rows
-# dbSendQuery(con, "truncate table events")
-```

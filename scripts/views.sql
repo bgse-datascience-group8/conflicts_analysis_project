@@ -1,7 +1,9 @@
 CREATE VIEW events_215125_28 AS 
   SELECT * FROM events WHERE SQLDATE > 215124 AND EventRootCode is not NULL;
 
-CREATE VIEW event_type_counts AS
+DROP TABLE event_type_counts;
+
+CREATE TABLE if not exists event_type_counts AS
   SELECT count(*),
   CASE EventRootCode
     WHEN 1 THEN "public_statement"
@@ -27,26 +29,3 @@ CREATE VIEW event_type_counts AS
     ELSE NULL
   END AS EventType
   FROM events GROUP BY EventRootCode;
-
-
-
-CREATE VIEW public_statement_events AS
-  SELECT * FROM events WHERE EventRootCode = 1;
-
-CREATE VIEW provide_aid_events AS
-  SELECT * FROM events WHERE EventRootCode = 7;
-
-CREATE VIEW demand_events AS
-  SELECT * FROM events WHERE EventRootCode = 10;
-
-CREATE VIEW disapprove_events AS
-  SELECT * FROM events WHERE EventRootCode = 11;
-
-CREATE VIEW reject_events AS
-  SELECT * FROM events WHERE EventRootCode = 12;
-
-CREATE VIEW reject_events AS
-  SELECT * FROM events WHERE EventRootCode = 12;
-
-CREATE VIEW protest_events AS
-  SELECT * FROM events WHERE EventRootCode = 14;
