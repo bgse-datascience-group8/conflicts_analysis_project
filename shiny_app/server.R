@@ -7,7 +7,6 @@ shinyServer(function(input, output) {
   con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
 
   output$significanceMap <- renderPlot({
-
     res <- dbSendQuery(con, paste0("select * from ", input$eventType))
     data <- dbFetch(res, n = -1)
     # Check out the distribution
@@ -17,15 +16,16 @@ shinyServer(function(input, output) {
 
     # Make sure we have a reasonable distribution
     meanLogNumMentions <- mean(log(data_subset$NumMentions))
-    hist(log(data_subset$NumMentions))
+    #hist(log(data_subset$NumMentions))
     data_subset$logNumMentions <- log(data_subset$NumMentions)
 
     map <- NULL
     mapWorld <- borders("world", colour="gray40", fill="gray40")
     map <- get_map(input$centerMapLocation, zoom = input$mapZoom, maptype = 'satellite')
-    map <- ggmap(map, extent = 'panel') + 
+    map <- ggmap(map, extent = 'device') + 
       geom_point(data = data_subset, aes(x = ActionGeo_Long, y = ActionGeo_Lat, size = logNumMentions), colour = 'orange')
 
     map
-  })
+  },
+  width = 800, height = 500)
 })
