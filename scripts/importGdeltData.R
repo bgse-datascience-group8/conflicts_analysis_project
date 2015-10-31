@@ -1,14 +1,14 @@
-library(RMySQL)
-
 # Had to add the following to ~/.my.cnf before this will work:
 #
 # [gdelt]
 # user=root
 # password=root
 #
+library(RMySQL)
+
 con <- dbConnect(RMySQL::MySQL(),
   dbname = "gdelt",
-  host = "bgseds-group8-rds.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
+  host = "bgse-ds-group8.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
   user = "group8",
   password = Sys.getenv("DB_PASSWORD"))
 
