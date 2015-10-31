@@ -1,0 +1,25 @@
+---
+title: "Test Time Series"
+author: "Aimee Barciauskas"
+date: "October 30, 2015"
+output: html_document
+---
+
+```{r}
+#install.packages('timeSeries')
+#install.packages('PerformanceAnalytics')
+#require(fTrading
+# Not sure we actually need this stuff yet
+# library(timeSeries)
+# library(xts)
+# library(PerformanceAnalytics)
+# library(fTrading)
+
+con <- dbConnect(RMySQL::MySQL(), "gdelt", group = "gdelt")
+res <- dbSendQuery(con, paste0("select * from count_events_grouped_by_day"))
+(data <- dbFetch(res, n = -1))
+data <- subset(data, SQLDATE > 20151001)
+
+plot(data, type = 'l')
+```
+
