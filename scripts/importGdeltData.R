@@ -4,13 +4,20 @@
 # user=root
 # password=root
 #
+# To execute from the commandline:
+# nohup R CMD BATCH importGdeltData.R &
+#
 library(RMySQL)
 
-con <- dbConnect(RMySQL::MySQL(),
-  dbname = "gdelt",
-  host = "ds-group8.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
-  user = "group8",
-  password = Sys.getenv("DB_PASSWORD"))
+# REMOTE DB
+# con <- dbConnect(RMySQL::MySQL(),
+#   dbname = "gdelt",
+#   host = "ds-group8.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
+#   user = "group8",
+#   password = Sys.getenv("DB_PASSWORD"))
+
+# LOCAL DB
+con <- dbConnect(RMySQL::MySQL(), group = "gdelt", dbname = "gdelt")
 
 colHeaders <- c('GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year',
 'FractionDate', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode',
@@ -30,16 +37,16 @@ colHeaders <- c('GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year',
 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID', 'DATEADDED',
 'SOURCEURL')
 
-# For 10 days, started at 6:39pm - 6 minutes for 10 days
-start <- 1
-ndays_into_past <- 10
-days <- rep('', ndays_into_past)
+# TODO: Take user input?
+library(lubridate)
+start <- 20130401
+ndays <- 2
+startdate <- strptime(start, "%Y%m%d")
+enddate <- startdate + days(ndays)
+days <- seq(startdate, enddate, by = 'day')
+days <- format(days, '%Y%m%d')
 
-for (nday in start:ndays_into_past) {
-  days[nday] <- format(Sys.Date() - nday, '%Y%m%d')
-}
-
-for (nday in 1:ndays_into_past) {
+for (nday in 1:ndays) {
   day <- days[nday]
   filename <- paste0(day, '.export.CSV')
   zip_filename <- paste0(filename, '.zip')
@@ -49,7 +56,7 @@ for (nday in 1:ndays_into_past) {
   data <- read.csv(filename, sep = '\t', stringsAsFactors = FALSE)
 
   colnames(data) <- colHeaders
-  data <- subset(dat, SQLDATE > 20130330)
+  data <- subset(data, SQLDATE > 20130330)
 
   print(paste0('Starting database write for ', day))
   dbWriteTable(con, "events", data, append = TRUE)
