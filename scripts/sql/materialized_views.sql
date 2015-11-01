@@ -53,7 +53,7 @@ DROP TABLE IF EXISTS assault_events;
 CREATE TABLE assault_events AS SELECT * FROM events WHERE EventRootCode = 18;
 
 DROP TABLE IF EXISTS fight_events;
-CREATE TABLE fight_events AS SELECT * FROM events WHERE EventRootCode = 18;
+CREATE TABLE fight_events AS SELECT * FROM events WHERE EventRootCode = 19;
 
 DROP TABLE IF EXISTS mass_violence_events;
 CREATE TABLE mass_violence_events AS SELECT * FROM events WHERE EventRootCode = 20;

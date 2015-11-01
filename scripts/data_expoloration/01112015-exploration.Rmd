@@ -1,0 +1,45 @@
+---
+title: "GDELT Exploration"
+author: "Aimee Barciauskas"
+date: "November 1, 2015"
+output: pdf_document
+---
+
+```{r}
+library(RMySQL)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from random_events")
+# n = -1 fetches all results, instead of default limit of first 500
+data <- dbFetch(res, n = -1)
+
+eventRootCodesDict <- c(
+ "public_statement",
+ "appeal",
+ "intent_to_cooperate",
+ "consult",
+ "diplomatic_cooperation",
+ "material_cooperation",
+ "provide_aid",
+ "yield",
+ "investigate",
+ "demand",
+ "disapprove",
+ "reject",
+ "threaten",
+ "protest",
+ "exhibit_force",
+ "reduce_relations",
+ "coerce",
+ "assault",
+ "fight",
+ "mass_violence")
+
+data$EventCodeName <- with(data, eventRootCodesDict[EventRootCode])
+
+library(ggplot2)
+c <- ggplot(data, aes(factor(EventCodeName)))
+c <- c + geom_bar()
+c + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
