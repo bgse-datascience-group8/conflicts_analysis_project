@@ -30,7 +30,7 @@ CREATE TABLE if not exists event_type_counts AS
   END AS EventType
   FROM events GROUP BY EventRootCode;
 
-  DROP TABLE count_events_grouped_by_day;
+DROP TABLE IF EXISTS count_events_grouped_by_day;
 
 CREATE TABLE count_events_grouped_by_day AS
   SELECT SQLDATE, count(*) AS total_events FROM random_events GROUP BY SQLDATE;
