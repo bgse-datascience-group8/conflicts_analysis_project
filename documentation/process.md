@@ -9,4 +9,7 @@ Script use for data import into RDS: [importGdeltData.R](../scripts/importGdeltD
 
 ## TODO:
 
-
+* Adapt script to:
+    * Import data in range of days
+    * Create table with GLOBALEVENTID uniqueness constraint
+    * Prossibly import data into partitioned (monthly) tables
