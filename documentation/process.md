@@ -11,5 +11,6 @@ Script use for data import into RDS: [importGdeltData.R](../scripts/importGdeltD
 
 * Adapt script to:
     * Create table with GLOBALEVENTID uniqueness constraint?
+    * Import data with schema and indices? (which are the best indices?)
     * Prossibly import data into partitioned (monthly) tables?
     * Limit import to events with some qualification of significance?
