@@ -1,0 +1,33 @@
+---
+title: "GDELT Data Exploration"
+author: "Aimee Barciauskas"
+date: "November 3, 2015"
+output: pdf_document
+---
+
+## Setup
+
+```{r}
+library(RMySQL)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from random_events")
+# n = -1 fetches all results, instead of default limit of first 500
+data <- dbFetch(res, n = -1)
+data <- subset(data, SQLDATE > 20141031)
+```
+
+## Can we detect important dates?
+
+```{r}
+data <- subset(data, FractionDate > 2015.00)
+first_of_september <- 2015 + (9 * 30 + 1) / 365
+september_events <- subset(data, FractionDate > first_of_september)
+nrow(september_events)
+library(ggplot2)
+c <- ggplot(september_events, aes(factor(FractionDate)))
+c <- c + geom_bar()
+c + theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+

@@ -6,3 +6,5 @@ con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt"
 res <- dbSendQuery(con, "select * from random_events")
 # n = -1 fetches all results, instead of default limit of first 500
 data <- dbFetch(res, n = -1)
+
+data <- subset(data, SQLDATE > 20141031)
