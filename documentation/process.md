@@ -7,6 +7,8 @@ Script use for data import into RDS: [importGdeltData.R](../scripts/importGdeltD
 * `time`: Importing data into RDS took about 180 minutes for 1 year (15 minutes per month, using an m4.xlarge)
 * `size`: Each month of data takes ~3GB of storage space
 
+**Update 08 Nov 2015** Imported all data since April 2013.
+
 ## TODO:
 
 * Adapt script to:

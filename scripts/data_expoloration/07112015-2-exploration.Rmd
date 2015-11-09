@@ -1,0 +1,44 @@
+---
+title: "GDELT Data Exploration"
+author: "Aimee Barciauskas"
+date: "November 7, 2015"
+output: pdf_document
+---
+
+```{r}
+library(RMySQL)
+library(ggmap)
+library(plyr)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from random_events")
+# n = -1 fetches all results, instead of default limit of first 500
+data <- dbFetch(res, n = -1)
+
+data.usa <- subset(data, ActionGeo_CountryCode == 'US')
+address_columns <- c("address",
+  "street_number",
+  "route",
+  "locality",
+  "administrative_area_level_2",
+  "administrative_area_level_1",
+  "country",
+  "postal_code")
+
+matrix_for_address_data <- matrix(NA,
+  nrow=nrow(data.usa),
+  ncol=8,
+  dimnames=list(rownames(data.usa), address_columns))
+
+data.usa <- cbind(data.usa, matrix_for_address_data)
+
+for (n in 1:nrow(data.usa)) {
+  gc <- as.numeric(data.usa[n,c('ActionGeo_Long', 'ActionGeo_Lat')])
+  res <- revgeocode(gc, output=c('more'))
+  if (nrow(res) == 1) data.usa[n,59:67] <- res$result
+  print(paste0('done revgeocoding ', n, '! ;)'))
+}
+
+```
+
