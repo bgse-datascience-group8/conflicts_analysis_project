@@ -13,6 +13,7 @@ cp mysql-connector-java-5.1.37/mysql-connector-java-5.1.37-bin.jar sqoop-1.4.6.b
   --connect jdbc:mysql://group8-db.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com:3306/gdelt \
   -username group8 -password $DB_PASSWORD \
   --target-dir /user/gdelt/events \
-  --fields-terminated-by "," \
+  --fields-terminated-by "|" \
+  --null-non-string '\\N' --null-non-string '\\N' \
   --table events \
   --direct -m 1

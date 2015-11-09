@@ -1,4 +1,4 @@
-CREATE TABLE events (
+create table events (  
   row_names STRING,
   GLOBALEVENTID BIGINT,
   SQLDATE BIGINT,
@@ -60,5 +60,5 @@ CREATE TABLE events (
   SOURCEURL STRING
 )
 row format delimited
-fields terminated by ','
+fields terminated by '|'
 stored as textfile;
