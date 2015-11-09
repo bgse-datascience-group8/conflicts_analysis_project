@@ -14,6 +14,6 @@ cp mysql-connector-java-5.1.37/mysql-connector-java-5.1.37-bin.jar sqoop-1.4.6.b
   -username group8 -password $DB_PASSWORD \
   --target-dir /user/gdelt/events \
   --fields-terminated-by "|" \
-  --null-non-string '\\N' --null-non-string '\\N' \
+  --null-string '\\N' --null-non-string '\\N' \
   --table events \
   --direct -m 1

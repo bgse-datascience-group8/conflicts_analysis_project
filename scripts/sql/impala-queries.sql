@@ -68,6 +68,16 @@ row format delimited
 fields terminated by '|'
 stored as textfile;
 
+ALTER TABLE events CHANGE GoldsteinScale GoldsteinScale STRING;
+ALTER TABLE events CHANGE Actor1Geo_Lat Actor1Geo_Lat STRING;
+ALTER TABLE events CHANGE Actor1Geo_Long Actor1Geo_Long STRING;
+ALTER TABLE events CHANGE Actor2Geo_Lat Actor2Geo_Lat STRING;
+ALTER TABLE events CHANGE Actor2Geo_Long Actor2Geo_Long STRING;
+ALTER TABLE events CHANGE ActionGeo_Long ActionGeo_Long STRING;
+ALTER TABLE events CHANGE ActionGeo_Lat ActionGeo_Lat STRING;
+
+SELECT * FROM events LIMIT 10;
+
 select count(*) from events;
 -- Query: select count(*) from events
 -- +-----------+
@@ -76,3 +86,52 @@ select count(*) from events;
 -- | 130753485 |
 -- +-----------+
 -- Returned 1 row(s) in 25.56s
+
+select count(*) from events where Actor1Geo_CountryCode = 'US';
+-- +----------+
+-- | count(*) |
+-- +----------+
+-- | 37410376 |
+-- +----------+
+-- Returned 1 row(s) in 17.86s
+
+select count(*) from events where Actor2Geo_CountryCode = 'US';
+-- +----------+
+-- | count(*) |
+-- +----------+
+-- | 28599855 |
+-- +----------+
+
+select count(*) from events where Actor2Geo_CountryCode = 'US' and Actor1Geo_CountryCode = 'US';
+-- +----------+
+-- | count(*) |
+-- +----------+
+-- | 20560207 |
+-- +----------+
+
+select count(*) from events where Actor2Geo_CountryCode = 'US' or Actor1Geo_CountryCode = 'US';
+-- +----------+
+-- | count(*) |
+-- +----------+
+-- | 45450024 |
+-- +----------+
+
+create external table usa_events_subset
+row format delimited
+fields terminated by '|'
+stored as textfile
+location '/user/gdelt/usa_events_subset'
+as (
+  select * from events where Actor1Geo_CountryCode = 'US' or Actor2Geo_CountryCode = 'US' and EventRootCode is not NULL
+);
+
+create external table usa_events_subset_random
+row format delimited
+fields terminated by '|'
+stored as textfile
+location '/user/gdelt/usa_events_subset_random'
+as (
+  select * from usa_events_subset order by RAND() limit 1000000000
+);
+
+

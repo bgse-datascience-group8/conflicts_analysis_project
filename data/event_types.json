@@ -1,0 +1,14 @@
+
+{
+ "name": "Event Types",
+ "children": [
+  {
+   "name": "01 Make Public Statement",
+   "size": 0,
+   "children": [
+      { "name": "010 Make statement, not specificed below", "size": 0 },
+      { "name": "011 Decline comment", "size": 0 }
+     ]
+   }
+ ]
+}
