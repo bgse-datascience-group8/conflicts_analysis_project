@@ -131,7 +131,10 @@ fields terminated by '|'
 stored as textfile
 location '/user/gdelt/usa_events_subset_random'
 as (
-  select * from usa_events_subset order by RAND() limit 1000000000
+  select * from usa_events_subset order by RAND() limit 100000
 );
 
+insert into table usa_events_subset_random
+  select * from usa_events_subset order by RAND() limit 100000;
 
+-- 

@@ -1,4 +1,4 @@
-CREATE TABLE `usa_events_subset` (
+CREATE TABLE `usa_events_subset_random` (
   `row_names` text,
   `GLOBALEVENTID` bigint(20) DEFAULT NULL,
   `SQLDATE` bigint(20) DEFAULT NULL,
