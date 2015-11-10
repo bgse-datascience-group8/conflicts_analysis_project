@@ -134,7 +134,6 @@ as (
   select * from usa_events_subset order by RAND() limit 100000
 );
 
+-- 2 more times to get a total of 300,000 random events
 insert into table usa_events_subset_random
   select * from usa_events_subset order by RAND() limit 100000;
-
--- 

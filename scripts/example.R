@@ -1,3 +1,5 @@
+# mysql import:
+# $ mysql -uroot -p gdelt < usa_events_subset_random.sql
 # install.packages(RMySQL)
 library(RMySQL)
 
