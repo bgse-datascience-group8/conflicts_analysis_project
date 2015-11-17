@@ -29,12 +29,11 @@ The process for building the conflict analysis database is as follows:
 #### 1. Data Import
 
 1. imported data into RDS since April 2013 using [`scripts/importGdeltData.R`](./scripts/importGdeltData.R)
-2. started emr cluster with 4 data nodes ![cluster configuration](cluster-config.png)
-3. sqooped data into hdfs [`scripts/shell/sqoop-import.sh`](./scripts/shell/sqoop-import.sh)
-4. built events table using impalal [`scripts/sql/impala-queries.sql`](./scripts/sql/impala-queries.sql)
-5. subset events in the US (see impala queries script)
-6. subset events in the US into random subset of a workable size
-7. exported tables resulting from 5 and 6 back into RDS (see sqoop script)
+2. sqooped data into hdfs [`scripts/shell/sqoop-import.sh`](./scripts/shell/sqoop-import.sh)
+3. built events table using impalal [`scripts/sql/impala-queries.sql`](./scripts/sql/impala-queries.sql)
+4. subset events in the US (see impala queries script)
+5. subset events in the US into random subset of a workable size
+6. exported tables resulting from 5 and 6 back into RDS (see sqoop script)
 
 #### 2. Create and join events with GNIS features (cities)
 
