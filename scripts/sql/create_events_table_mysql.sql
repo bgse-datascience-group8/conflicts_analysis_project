@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS usa_events_subset_random;
+
 CREATE TABLE `usa_events_subset_random` (
   `row_names` text,
   `GLOBALEVENTID` bigint(20) DEFAULT NULL,
@@ -41,21 +43,24 @@ CREATE TABLE `usa_events_subset_random` (
   `Actor1Geo_ADM1Code` text,
   `Actor1Geo_Lat` double DEFAULT NULL,
   `Actor1Geo_Long` double DEFAULT NULL,
-  `Actor1Geo_FeatureID` text,
+  `Actor1Geo_FeatureID` varchar(13),
   `Actor2Geo_Type` bigint(20) DEFAULT NULL,
   `Actor2Geo_FullName` text,
   `Actor2Geo_CountryCode` text,
   `Actor2Geo_ADM1Code` text,
   `Actor2Geo_Lat` double DEFAULT NULL,
   `Actor2Geo_Long` double DEFAULT NULL,
-  `Actor2Geo_FeatureID` text,
+  `Actor2Geo_FeatureID` varchar(13),
   `ActionGeo_Type` bigint(20) DEFAULT NULL,
   `ActionGeo_FullName` text,
   `ActionGeo_CountryCode` text,
   `ActionGeo_ADM1Code` text,
   `ActionGeo_Lat` double DEFAULT NULL,
   `ActionGeo_Long` double DEFAULT NULL,
-  `ActionGeo_FeatureID` text,
+  `ActionGeo_FeatureID` varchar(13),
   `DATEADDED` bigint(20) DEFAULT NULL,
-  `SOURCEURL` text
+  `SOURCEURL` text,
+  FOREIGN KEY (Actor1Geo_FeatureID) REFERENCES gnis_features(FEATURE_ID),
+  FOREIGN KEY (Actor2Geo_FeatureID) REFERENCES gnis_features(FEATURE_ID),
+  FOREIGN KEY (ActionGeo_FeatureID) REFERENCES gnis_features(FEATURE_ID)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
