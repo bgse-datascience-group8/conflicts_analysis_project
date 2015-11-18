@@ -62,7 +62,7 @@ The process for building the conflict analysis database is as follows:
 
 [`scripts/impala/significance_cols.sql`](/scripts/impala/significance_cols.sql)
 
-**5. EMR Impala:** Download and create the `gnis_features` table using [`scripts/impala/gnis_features.sql`](/scripts/sql/create_gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
+**5. EMR Impala:** Download and create the `gnis_features` table using [`scripts/impala/gnis_features.sql`](/scripts/sql/gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
 
 **6. EMR Impala:** Join events with features to create `events_with_cities` table
 
