@@ -4,9 +4,27 @@
 
 The GDELT Project collects and stores events gathered from many different news media, including broadcast, web and print. It identifies attributes of the event, such as actors, locations and significance and categorizes each into an event hierarchy.
 
-The event hierachy is as follows:
+The mysql table on which we run our analysis has the following structure:
 
-[ADD ME]
+```sql
+MySQL [gdelt]> describe city_day_event_counts;
++---------------------------------+------------+------+-----+---------+-------+
+| Field                           | Type       | Null | Key | Default | Extra |
++---------------------------------+------------+------+-----+---------+-------+
+| num_conflicts                   | bigint(20) | YES  |     | NULL    |       |
+| sum_squared_significance_scores | double     | YES  |     | NULL    |       |
+| sqldate                         | bigint(20) | YES  |     | NULL    |       |
+| feature_name                    | text       | YES  |     | NULL    |       |
+| feature_id                      | text       | YES  |     | NULL    |       |
+| state_alpha                     | text       | YES  |     | NULL    |       |
+| county_name                     | text       | YES  |     | NULL    |       |
+| prim_lat_dec                    | double     | YES  |     | NULL    |       |
+| prim_long_dec                   | double     | YES  |     | NULL    |       |
++---------------------------------+------------+------+-----+---------+-------+
+9 rows in set (0.01 sec)
+```
+
+Feature name is equivalent to city name in this case.
 
 In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application will be built on a subset of the GDELT database. The data is subset based on the following criteria:
 
@@ -24,33 +42,25 @@ To be able to estimate the geo-spatial effects, the following data model is used
 
 The process for building the conflict analysis database is as follows:
 
-#### 1. Data Import
-
-1. imported data into RDS since April 2013 using [`scripts/importGdeltData.R`](./scripts/importGdeltData.R)
-2. sqooped data into hdfs [`scripts/shell/sqoop-import.sh`](./scripts/shell/sqoop-import.sh)
-3. built events table using impalal [`scripts/sql/impala-queries.sql`](./scripts/sql/impala-queries.sql)
-4. subset to conflict events in the US (see impala queries script)
-5. Add standardized columns of significance metrics (`NumMentions`, `NumArticles`, `NumSources`)
-6. Sum standardized columns as significance measure
+1. Imported data into RDS since April 2013 using [`scripts/importGdeltData.R`](./scripts/importGdeltData.R)
+2. **Sqooped** data in and out of RDS and HDFS [`scripts/shell/sqoop-import.sh`](./scripts/shell/sqoop-import.sh)
+3. **EMR Impala-shell** built events table and subset to conflict events in the US [`scripts/sql/impala_events_to_usa_conflict_events.sql`](./scripts/sql/impala_events_to_usa_conflict_events.sql)
+5. **Cloudera Impala-shell** Add standardized columns of significance metrics (`NumMentions`, `NumArticles`, `NumSources`) and sum standardized columns as significance measure: []()
 7. GNIS...
 8. Create aggregate table `city_day_conflict_counts`
 9. exported result tables back into RDS (see sqoop script)
 
-#### 2. Create and join events with GNIS features (cities)
 
 1. Download [GNIS features file](http://geonames.usgs.gov/docs/stategaz/NationalFile_20151001.zip)
 2. Create the `gnis_features` table using [`scripts/sql/create_gnis_features.sql`](./scripts/sql/create_gnis_features.sql)
 3. Import the data [`scripts/sql/create_gnis_features.sql`](./scripts/sql/create_gnis_features.sql)
 4. Subset the features to only those of type 'populated place' (e.g. cities) and create the `events_with_cities` table [scripts/sql/events_features_joined_view.sql](./scripts/sql/events_features_joined_view.sql)
 
-#### 3. Create aggregatetes table
+**EMR Impala-shell** Create the city-date counts table [scripts/sql/conflict_events_city_day_counts.sql](./scripts/sql/impala_city_day_event_counts.sql)
 
-1. Create the table [scripts/sql/conflict_events_city_day_counts.sql](./scripts/sql/conflict_events_city_day_counts.sql)
-2. Join with self to add columns for lagged values of self and other cities [TODO]
-3. Add city-characteristic and time-characteristic columns [TODO]
+**Footnote to 2:** At different stages, we use either the Cloudera AMI or AWS EMR because we needed the power of scaling (EMR) or required a more recent version of Impala (Cloudera) to make use of the STDDEV function that is not available in EMR's current 1.2.4 version of Impala.
 
-#### 4. Final script
 
-The final dump file of the `conflict_events_city_day_counts` table will be used in the application.
+#### Final script
 
-[ADD HERE]
+The final dump file of the [`city_day_event_counts.sql`](./data/city_day_event_counts.sql) table is used in the application and our analysis.
