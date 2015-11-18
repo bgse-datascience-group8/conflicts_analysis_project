@@ -1,5 +1,4 @@
 -- cloudera instance
-
 create database gdelt location '/user/gdelt';
 use gdelt;
 

@@ -1,3 +1,4 @@
+
 -- downloaded & unzip http://geonames.usgs.gov/docs/stategaz/NationalFile_20151001.zip
 -- unzip NationalFile_20151001.zip
 -- reference http://geonames.usgs.gov/domestic/metadata.htm
