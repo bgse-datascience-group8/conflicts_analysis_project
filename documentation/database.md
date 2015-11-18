@@ -40,7 +40,7 @@ After subsetting the table, additional steps are required to build the conflict 
 
 Below summarizes the tables used to compose the final table:
 
-![Data Model](https://www.lucidchart.com/publicSegments/view/8c882a94-612a-463a-9802-0a72a6c928dc/image.png)
+![Data Model](https://www.lucidchart.com/publicSegments/view/7b894595-a078-49de-b988-d339afbd4fcc/image.png)
 
 ## Database Scripts
 
