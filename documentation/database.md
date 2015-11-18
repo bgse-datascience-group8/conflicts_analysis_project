@@ -1,6 +1,6 @@
 # Database Design
 
-## Description
+## Database Description
 
 The table on which we run our analysis has the following structure:
 
@@ -24,7 +24,7 @@ MySQL [gdelt]> describe city_day_event_counts;
 
 Feature name is equivalent to city name.
 
-## Data origin
+## Database origin
 
 In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application is built on an aggregated subset of the GDELT database.
 
