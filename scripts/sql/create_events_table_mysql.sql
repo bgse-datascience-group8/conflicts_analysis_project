@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS usa_events_subset_random;
+DROP TABLE IF EXISTS usa_conflict_events;
 
-CREATE TABLE `usa_events_subset_random` (
+CREATE TABLE `usa_conflict_events` (
   `row_names` text,
   `GLOBALEVENTID` bigint(20) DEFAULT NULL,
   `SQLDATE` bigint(20) DEFAULT NULL,
@@ -59,8 +59,5 @@ CREATE TABLE `usa_events_subset_random` (
   `ActionGeo_Long` double DEFAULT NULL,
   `ActionGeo_FeatureID` varchar(13),
   `DATEADDED` bigint(20) DEFAULT NULL,
-  `SOURCEURL` text,
-  FOREIGN KEY (Actor1Geo_FeatureID) REFERENCES gnis_features(FEATURE_ID),
-  FOREIGN KEY (Actor2Geo_FeatureID) REFERENCES gnis_features(FEATURE_ID),
-  FOREIGN KEY (ActionGeo_FeatureID) REFERENCES gnis_features(FEATURE_ID)
+  `SOURCEURL` text
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

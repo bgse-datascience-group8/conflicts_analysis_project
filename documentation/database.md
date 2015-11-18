@@ -11,16 +11,14 @@ The event hierachy is as follows:
 In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application will be built on a subset of the GDELT database. The data is subset based on the following criteria:
 
 * **Events ocurring on or after 1 April 2013:** We exclude any events ocurring before April 2013 for two important reasons. The first is this is when data collection by GDELT started and all events prior have been back-filled. Second, there is no SOURCEURL field. The SOURCEURL field is an important field for sanity-checking the original source of events.
-* **Events within the United States:** We are limiting the scope of our analysis to events ocurring within the United States (e.g. Actor1Geo_Country or Actor2Geo_Country = 'US').
+* **Events within the United States:** We are limiting the scope of our analysis to events ocurring within the United States (e.g. Actor1Geo_Country and Actor2Geo_Country = 'US').
 * **Events with a QuadClass of 3 or 4:** The QuadClass field is the highest level of the event type hierarchy and includes only the values 1=Verbal Cooperation, 2=Material Cooperation, 3=Verbal Conflict, 4=Material Conflict.
-* **Events which meet a basic criterium of significance:** Given the comprehensivity of the GDELT algorithm, many events identified are trivial [GIVE EXAMPLES]. Fortunately, GDELT has given us a couple of fields we use to control for this, and we exclude all events not meeting our basic criterium of significance as being: [ADD ME]. This was decided by [ADD ME]
 
 After subsetting the table, additional steps are required to build the conflict analysis database. These are described below in [Database Scripts](#database-scripts)
 
 To be able to estimate the geo-spatial effects, the following data model is used:
 
 ![Data Model](https://www.lucidchart.com/publicSegments/view/8c882a94-612a-463a-9802-0a72a6c928dc/image.png)
-
 
 ## Database Scripts
 
@@ -31,9 +29,12 @@ The process for building the conflict analysis database is as follows:
 1. imported data into RDS since April 2013 using [`scripts/importGdeltData.R`](./scripts/importGdeltData.R)
 2. sqooped data into hdfs [`scripts/shell/sqoop-import.sh`](./scripts/shell/sqoop-import.sh)
 3. built events table using impalal [`scripts/sql/impala-queries.sql`](./scripts/sql/impala-queries.sql)
-4. subset events in the US (see impala queries script)
-5. subset events in the US into random subset of a workable size
-6. exported tables resulting from 5 and 6 back into RDS (see sqoop script)
+4. subset to conflict events in the US (see impala queries script)
+5. Add standardized columns of significance metrics (`NumMentions`, `NumArticles`, `NumSources`)
+6. Sum standardized columns as significance measure
+7. GNIS...
+8. Create aggregate table `city_day_conflict_counts`
+9. exported result tables back into RDS (see sqoop script)
 
 #### 2. Create and join events with GNIS features (cities)
 

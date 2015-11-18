@@ -9,7 +9,7 @@ create table events (
   SQLDATE BIGINT,
   MonthYear BIGINT,
   Year BIGINT,
-  FractionDate FLOAT,
+  FractionDate STRING,
   Actor1Code STRING,
   Actor1Name STRING,
   Actor1CountryCode STRING,
@@ -35,31 +35,31 @@ create table events (
   EventBaseCode BIGINT,
   EventRootCode BIGINT,
   QuadClass BIGINT,
-  GoldsteinScale FLOAT,
+  GoldsteinScale STRING,
   NumMentions BIGINT,
   NumSources BIGINT,
   NumArticles BIGINT,
-  AvgTone FLOAT,
+  AvgTone STRING,
   Actor1Geo_Type BIGINT,
   Actor1Geo_FullName STRING,
   Actor1Geo_CountryCode STRING,
   Actor1Geo_ADM1Code STRING,
-  Actor1Geo_Lat FLOAT,
-  Actor1Geo_Long FLOAT,
+  Actor1Geo_Lat STRING,
+  Actor1Geo_Long STRING,
   Actor1Geo_FeatureID STRING,
   Actor2Geo_Type BIGINT,
   Actor2Geo_FullName STRING,
   Actor2Geo_CountryCode STRING,
   Actor2Geo_ADM1Code STRING,
-  Actor2Geo_Lat FLOAT,
-  Actor2Geo_Long FLOAT,
+  Actor2Geo_Lat STRING,
+  Actor2Geo_Long STRING,
   Actor2Geo_FeatureID STRING,
   ActionGeo_Type BIGINT,
   ActionGeo_FullName STRING,
   ActionGeo_CountryCode STRING,
   ActionGeo_ADM1Code STRING,
-  ActionGeo_Lat FLOAT,
-  ActionGeo_Long FLOAT,
+  ActionGeo_Lat STRING,
+  ActionGeo_Long STRING,
   ActionGeo_FeatureID STRING,
   DATEADDED BIGINT,
   SOURCEURL STRING
@@ -68,72 +68,63 @@ row format delimited
 fields terminated by '|'
 stored as textfile;
 
-ALTER TABLE events CHANGE GoldsteinScale GoldsteinScale STRING;
-ALTER TABLE events CHANGE Actor1Geo_Lat Actor1Geo_Lat STRING;
-ALTER TABLE events CHANGE Actor1Geo_Long Actor1Geo_Long STRING;
-ALTER TABLE events CHANGE Actor2Geo_Lat Actor2Geo_Lat STRING;
-ALTER TABLE events CHANGE Actor2Geo_Long Actor2Geo_Long STRING;
-ALTER TABLE events CHANGE ActionGeo_Long ActionGeo_Long STRING;
-ALTER TABLE events CHANGE ActionGeo_Lat ActionGeo_Lat STRING;
-
 SELECT * FROM events LIMIT 10;
 
-select count(*) from events;
--- Query: select count(*) from events
--- +-----------+
--- | count(*)  |
--- +-----------+
--- | 130753485 |
--- +-----------+
--- Returned 1 row(s) in 25.56s
+-- select count(*) from events;
+-- -- Query: select count(*) from events
+-- -- +-----------+
+-- -- | count(*)  |
+-- -- +-----------+
+-- -- | 130753485 |
+-- -- +-----------+
+-- -- Returned 1 row(s) in 25.56s
 
-select count(*) from events where Actor1Geo_CountryCode = 'US';
--- +----------+
--- | count(*) |
--- +----------+
--- | 37410376 |
--- +----------+
--- Returned 1 row(s) in 17.86s
+-- select count(*) from events where Actor1Geo_CountryCode = 'US';
+-- -- +----------+
+-- -- | count(*) |
+-- -- +----------+
+-- -- | 37410376 |
+-- -- +----------+
+-- -- Returned 1 row(s) in 17.86s
 
-select count(*) from events where Actor2Geo_CountryCode = 'US';
--- +----------+
--- | count(*) |
--- +----------+
--- | 28599855 |
--- +----------+
+-- select count(*) from events where Actor2Geo_CountryCode = 'US';
+-- -- +----------+
+-- -- | count(*) |
+-- -- +----------+
+-- -- | 28599855 |
+-- -- +----------+
 
-select count(*) from events where Actor2Geo_CountryCode = 'US' and Actor1Geo_CountryCode = 'US';
--- +----------+
--- | count(*) |
--- +----------+
--- | 20560207 |
--- +----------+
+-- select count(*) from events where Actor2Geo_CountryCode = 'US' and Actor1Geo_CountryCode = 'US';
+-- -- +----------+
+-- -- | count(*) |
+-- -- +----------+
+-- -- | 20560207 |
+-- -- +----------+
 
-select count(*) from events where Actor2Geo_CountryCode = 'US' or Actor1Geo_CountryCode = 'US';
--- +----------+
--- | count(*) |
--- +----------+
--- | 45450024 |
--- +----------+
+-- select count(*) from events where Actor2Geo_CountryCode = 'US' or Actor1Geo_CountryCode = 'US';
+-- -- +----------+
+-- -- | count(*) |
+-- -- +----------+
+-- -- | 45450024 |
+-- -- +----------+
 
-create external table usa_events_subset
+create external table usa_conflict_events
 row format delimited
 fields terminated by '|'
 stored as textfile
-location '/user/gdelt/usa_events_subset'
+location '/user/gdelt/usa_conflict_events'
 as (
-  select * from events where Actor1Geo_CountryCode = 'US' or Actor2Geo_CountryCode = 'US' and EventRootCode is not NULL
+  select * from events
+  where
+    (Actor1Geo_CountryCode = 'US' AND Actor2Geo_CountryCode = 'US') and
+    (QuadClass = 3 or QuadClass = 4)
 );
 
-create external table usa_events_subset_random
-row format delimited
-fields terminated by '|'
-stored as textfile
-location '/user/gdelt/usa_events_subset_random'
-as (
-  select * from usa_events_subset order by RAND() limit 100000
-);
+-- Query: select count(*) from usa_conflict_events
+-- +----------+
+-- | count(*) |
+-- +----------+
+-- | 5628143  |
+-- +----------+
+-- Returned 1 row(s) in 0.94s
 
--- 2 more times to get a total of 300,000 random events
-insert into table usa_events_subset_random
-  select * from usa_events_subset order by RAND() limit 100000;
