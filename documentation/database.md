@@ -24,9 +24,13 @@ MySQL [gdelt]> describe city_day_event_counts;
 
 Feature name is equivalent to city name.
 
+## Data origin
+
+In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application is built on an aggregated subset of the GDELT database.
+
 The GDELT Project collects and stores events gathered from many different news media, including broadcast, web and print. It identifies attributes of the event, such as actors, locations and significance and categorizes each into an event hierarchy.
 
-In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application will be built on a subset of the GDELT database. The data is subset based on the following criteria:
+The data is subset based on the following criteria:
 
 * **Events ocurring on or after 1 April 2013:** We exclude any events ocurring before April 2013 for two important reasons. The first is this is when data collection by GDELT started and all events prior have been back-filled. Second, there is no SOURCEURL field. The SOURCEURL field is an important field for sanity-checking the original source of events.
 * **Events within the United States:** We are limiting the scope of our analysis to events ocurring within the United States (e.g. Actor1Geo_Country and Actor2Geo_Country = 'US').
