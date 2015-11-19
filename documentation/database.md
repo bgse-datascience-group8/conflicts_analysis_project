@@ -75,4 +75,4 @@ The process for building the conflict analysis database is as follows:
 
 #### Final script
 
-The current dump file can be found on Google Drive: [`city_day_event_counts.sql`](https://drive.google.com/open?id=0B39HWOgUiKJrMV9EOWtkVE13ams).
+The current dump file can be found on Google Drive: [`city_day_event_counts.sql`](https://drive.google.com/a/barcelonagse.eu/file/d/0B39HWOgUiKJrV08xWVVmcUY0Snc/view?usp=sharing).
