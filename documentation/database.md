@@ -26,7 +26,7 @@ MySQL [gdelt]> describe city_day_event_counts;
 
 Feature name is equivalent to city name.
 
-**`num_conflicts`** is the dependent variable. The analysis is done regressing the num_conflicts in a given city on a given day on the `num_conflicts` in the same city on previous days and other cities on the same and previous days. All `num_conflicts` will be weighted by the `sum_num_*` columns. These `sum_num_*` columns measure the significance of the conflict events ocurring on that day in that city.
+**`num_conflicts`** is the dependent variable. The analysis is done regressing the `num_conflicts` in a given city on a given day on the `num_conflicts` in the same city on previous days and other cities on the same and previous days. All `num_conflicts` will be weighted by the `sum_num_*` columns. These `sum_num_*` columns measure the significance of the conflict events ocurring on that day in that city.
 
 ## Database origin
 
