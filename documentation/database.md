@@ -77,4 +77,4 @@ At different stages, we use either the Cloudera AMI or AWS EMR because we needed
 
 #### Final script
 
-The final dump file of the [`/data/city_day_event_counts.sql`](/data/city_day_event_counts.sql) table is used in the application and our analysis.
+The current dump file can be found on Google Drive: [`city_day_event_counts.sql`](https://drive.google.com/open?id=0B39HWOgUiKJrMV9EOWtkVE13ams).
