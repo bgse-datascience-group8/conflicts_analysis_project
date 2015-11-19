@@ -58,21 +58,16 @@ The process for building the conflict analysis database is as follows:
 
 [`/scripts/impala/events_to_usa_conflict_events.sql`](/scripts/impala/events_to_usa_conflict_events.sql)
 
-**4. Cloudera Impala:** Add standardized columns of significance metrics (`NumMentions`, `NumArticles`, `NumSources`) and sum standardized columns as significance measure
+**4. EMR Impala:** Download and create the `gnis_features` table using [`/scripts/impala/gnis_features.sql`](/scripts/sql/gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
 
-[`/scripts/impala/significance_cols.sql`](/scripts/impala/significance_cols.sql)
-
-**5. EMR Impala:** Download and create the `gnis_features` table using [`/scripts/impala/gnis_features.sql`](/scripts/sql/gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
-
-**6. EMR Impala:** Join events with features to create `events_with_cities` table
+**5. EMR Impala:** Join events with features to create `events_with_cities` table
 
 [`/scripts/impala/events_with_cities.sql`](/scripts/impala/events_with_cities.sql)
 
-**7. EMR Impala:** Create the city-date counts table
+**6. EMR Impala:** Create the city-date counts table
 
 [`/scripts/impala/city_day_event_counts.sql`](/scripts/sql/impala/city_day_event_counts.sql)
 
-At different stages, we use either the Cloudera AMI or AWS EMR because we needed the power of scaling (EMR) or required a more recent version of Impala (Cloudera) to make use of the STDDEV function that is not available in EMR's current 1.2.4 version of Impala.
 
 
 #### Final script
