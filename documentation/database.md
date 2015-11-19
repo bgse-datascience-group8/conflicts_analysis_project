@@ -10,7 +10,9 @@ MySQL [gdelt]> describe city_day_event_counts;
 | Field                           | Type       | Null | Key | Default | Extra |
 +---------------------------------+------------+------+-----+---------+-------+
 | num_conflicts                   | bigint(20) | YES  |     | NULL    |       |
-| sum_significance_scores         | double     | YES  |     | NULL    |       |
+| sum_num_mentions                | double     | YES  |     | NULL    |       |
+| sum_num_articls                 | double     | YES  |     | NULL    |       |
+| sum_num_sources                 | double     | YES  |     | NULL    |       |
 | sqldate                         | bigint(20) | YES  |     | NULL    |       |
 | feature_name                    | text       | YES  |     | NULL    |       |
 | feature_id                      | text       | YES  |     | NULL    |       |
