@@ -57,6 +57,14 @@ sqoop export \
 ./sqoop-1.4.6.bin__hadoop-2.0.4-alpha/bin/sqoop export \
   --connect jdbc:mysql://group8-gdelt.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com:3306/gdelt \
   -username group8 -password $DB_PASSWORD \
+  --table 'events_with_cities' \
+  --export-dir /user/gdelt/events_with_cities \
+  --direct -m 4 \
+  --fields-terminated-by "|"
+
+./sqoop-1.4.6.bin__hadoop-2.0.4-alpha/bin/sqoop export \
+  --connect jdbc:mysql://group8-gdelt.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com:3306/gdelt \
+  -username group8 -password $DB_PASSWORD \
   --table 'city_day_event_counts' \
   --export-dir /user/gdelt/city_day_event_counts \
   --direct -m 4 \

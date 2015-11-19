@@ -7,7 +7,9 @@ location '/user/gdelt/city_day_event_counts'
 AS
   SELECT 
     COUNT(*) as num_conflicts,
-    SUM(significance_score) as sum_significance_scores,
+    SUM(NumMentions) as sum_num_mentions,
+    SUM(NumArticles) as sum_num_articles,
+    SUM(NumSources) as sum_num_sources,
     SQLDATE,
     FEATURE_NAME,
     FEATURE_ID,
