@@ -8,4 +8,4 @@ mysqldump --host=group8-gdelt.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com --user=gr
 scp ubuntu@52.17.60.129:~/random_events_dump.sql .
 
 # Dump into local
-mysql -uroot -p gdelt < random_events_dump.sql
+mysql -uroot -p gdelt < city_day_event_counts.sql
