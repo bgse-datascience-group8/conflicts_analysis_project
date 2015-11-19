@@ -1,10 +1,10 @@
-
--- downloaded & unzip http://geonames.usgs.gov/docs/stategaz/NationalFile_20151001.zip
--- unzip NationalFile_20151001.zip
 -- reference http://geonames.usgs.gov/domestic/metadata.htm
+-- COMMANDS
+-- wget http://geonames.usgs.gov/docs/stategaz/NationalFile_20151001.zip
+-- unzip NationalFile_20151001.zip
 -- hadoop fs -mkdir /user/gdelt/gnis_features
--- hadoop fs -put NationalFile_20151001.txt /user/gdelt/gnis_features/NationalFile_20151001.txt
 -- have to remove first line
+-- hadoop fs -put NationalFile_20151001.txt /user/gdelt/gnis_features/NationalFile_20151001.txt
 -- (impala-shell)
 create database gdelt location '/user/gdelt';
 use gdelt;

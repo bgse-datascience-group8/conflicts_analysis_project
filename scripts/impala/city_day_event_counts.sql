@@ -1,8 +1,13 @@
 DROP TABLE IF EXISTS city_day_event_counts;
-CREATE TABLE city_day_event_counts AS
+CREATE EXTERNAL TABLE city_day_event_counts
+row format delimited
+fields terminated by '|'
+stored as textfile
+location '/user/gdelt/city_day_event_counts'
+AS
   SELECT 
     COUNT(*) as num_conflicts,
-    SUM(significance_score*significance_score) as sum_squared_significance_scores,
+    SUM(significance_score) as sum_significance_scores,
     SQLDATE,
     FEATURE_NAME,
     FEATURE_ID,
