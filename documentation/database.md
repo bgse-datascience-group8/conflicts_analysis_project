@@ -48,7 +48,7 @@ Below summarizes the tables used to compose the final table:
 
 ![Data Model](https://www.lucidchart.com/publicSegments/view/f1312882-b8a5-4132-915a-277929077c91/image.png)
 
-## Database Process & Scripts
+## 2. Database Process & Scripts
 
 The process for building the conflict analysis database is as follows:
 
