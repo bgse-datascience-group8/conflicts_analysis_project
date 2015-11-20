@@ -5,23 +5,21 @@
 The table on which we run our analysis has the following structure:
 
 ```sql
-MySQL [gdelt]> describe city_day_event_counts;
-+---------------------------------+------------+------+-----+---------+-------+
-| Field                           | Type       | Null | Key | Default | Extra |
-+---------------------------------+------------+------+-----+---------+-------+
-| num_conflicts                   | bigint(20) | YES  |     | NULL    |       |
-| sum_num_mentions                | double     | YES  |     | NULL    |       |
-| sum_num_articls                 | double     | YES  |     | NULL    |       |
-| sum_num_sources                 | double     | YES  |     | NULL    |       |
-| sqldate                         | bigint(20) | YES  |     | NULL    |       |
-| feature_name                    | text       | YES  |     | NULL    |       |
-| feature_id                      | text       | YES  |     | NULL    |       |
-| state_alpha                     | text       | YES  |     | NULL    |       |
-| county_name                     | text       | YES  |     | NULL    |       |
-| prim_lat_dec                    | double     | YES  |     | NULL    |       |
-| prim_long_dec                   | double     | YES  |     | NULL    |       |
-+---------------------------------+------------+------+-----+---------+-------+
-9 rows in set (0.01 sec)
+CREATE TABLE `city_day_event_counts` (
+  `num_conflicts` bigint(20) DEFAULT NULL,
+  `sum_num_mentions` double DEFAULT NULL,
+  `sum_num_articles` double DEFAULT NULL,
+  `sum_num_sources` double DEFAULT NULL,
+  `sqldate` bigint(20) NOT NULL DEFAULT '0',
+  `feature_name` varchar(40) DEFAULT NULL,
+  `feature_id` varchar(13) NOT NULL DEFAULT '',
+  `state_alpha` varchar(2) DEFAULT NULL,
+  `county_name` varchar(40) DEFAULT NULL,
+  `prim_lat_dec` double DEFAULT NULL,
+  `prim_long_dec` double DEFAULT NULL,
+  PRIMARY KEY (`sqldate`,`feature_id`),
+  KEY `city_day_idx` (`sqldate`,`feature_name`,`state_alpha`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
 ```
 
 Feature name is equivalent to city name.
