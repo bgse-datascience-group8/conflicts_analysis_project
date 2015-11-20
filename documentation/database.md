@@ -10,16 +10,15 @@ CREATE TABLE `city_day_event_counts` (
   `sum_num_mentions` double DEFAULT NULL,
   `sum_num_articles` double DEFAULT NULL,
   `sum_num_sources` double DEFAULT NULL,
-  `sqldate` bigint(20) NOT NULL DEFAULT '0',
-  `feature_name` varchar(40) DEFAULT NULL,
-  `feature_id` varchar(13) NOT NULL DEFAULT '',
-  `state_alpha` varchar(2) DEFAULT NULL,
-  `county_name` varchar(40) DEFAULT NULL,
+  `sqldate` bigint(20) DEFAULT NULL,
+  `feature_name` varchar(40),
+  `feature_id` varchar(13),
+  `state_alpha` varchar(2),
+  `county_name` varchar(40),
   `prim_lat_dec` double DEFAULT NULL,
   `prim_long_dec` double DEFAULT NULL,
-  PRIMARY KEY (`sqldate`,`feature_id`),
-  KEY `city_day_idx` (`sqldate`,`feature_name`,`state_alpha`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1
+  PRIMARY KEY (sqldate, feature_id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 ```
 
 Feature name is equivalent to city name.
