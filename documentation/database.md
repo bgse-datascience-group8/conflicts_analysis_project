@@ -44,7 +44,7 @@ The data is subset based on the following criteria:
 
 After subsetting the table, additional steps are required to build the conflict analysis database. These are described below in **[Database Scripts](#database-scripts)**.
 
-Below summarizes the tables used to compose the final table:
+An image summarizing table extraction can be found below.
 
 ![Data Model](https://www.lucidchart.com/publicSegments/view/f1312882-b8a5-4132-915a-277929077c91/image.png)
 
@@ -54,25 +54,25 @@ The process for building the conflict analysis database is as follows:
 
 **1. BGSE EC2 AMI & R:** Import data from GDELT website server to RDS
 
-[`/scripts/importGdeltData.R`](/scripts/importGdeltData.R)
+[`/scripts/importGdeltData.R`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/importGdeltData.R)
 
 **2. Sqoop:** Sqoop data in and out of RDS and HDFS
 
-[`/scripts/shell/sqoop-import.sh`](/scripts/shell/sqoop-import.sh)
+[`/scripts/shell/sqoop-import.sh`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/shell/sqoop-import.sh)
 
 **3. EMR Impala** Build events table and subset to conflict events in the US
 
-[`/scripts/impala/events_to_usa_conflict_events.sql`](/scripts/impala/events_to_usa_conflict_events.sql)
+[`/scripts/impala/events_to_usa_conflict_events.sql`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/impala/events_to_usa_conflict_events.sql)
 
-**4. EMR Impala:** Download and create the `gnis_features` table using [`/scripts/impala/gnis_features.sql`](/scripts/sql/gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
+**4. EMR Impala:** Download and create the `gnis_features` table using [`/scripts/impala/gnis_features.sql`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/sql/gnis_features.sql). Subset features to cities (e.g. `FEATURE_CLASS = 'Populated Place'`).
 
 **5. EMR Impala:** Join events with features to create `events_with_cities` table
 
-[`/scripts/impala/events_with_cities.sql`](/scripts/impala/events_with_cities.sql)
+[`/scripts/impala/events_with_cities.sql`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/impala/events_with_cities.sql)
 
 **6. EMR Impala:** Create the city-date counts table
 
-[`/scripts/impala/city_day_event_counts.sql`](/scripts/sql/impala/city_day_event_counts.sql)
+[`/scripts/impala/city_day_event_counts.sql`](https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/sql/impala/city_day_event_counts.sql)
 
 
 #### Final script
