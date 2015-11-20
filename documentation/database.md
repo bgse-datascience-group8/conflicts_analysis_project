@@ -1,6 +1,11 @@
 # Database Design
 
-## Database Description
+This document contains 2 sections:
+
+1. [Database Description](#1-database-description) - decribes the final table for use in analysis and its origins from GDELT data.
+2. [Database Process & Scripts](#2-database-process--scripts) - decribes the process for deriving the final table from the GDELT data.
+
+## 1. Database Description
 
 The table on which we run our analysis has the following structure:
 
@@ -43,7 +48,7 @@ Below summarizes the tables used to compose the final table:
 
 ![Data Model](https://www.lucidchart.com/publicSegments/view/f1312882-b8a5-4132-915a-277929077c91/image.png)
 
-## Database Scripts
+## Database Process & Scripts
 
 The process for building the conflict analysis database is as follows:
 
