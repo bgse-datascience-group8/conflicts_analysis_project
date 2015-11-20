@@ -30,7 +30,7 @@ Feature name is equivalent to city name.
 
 **`num_conflicts`** is the dependent variable. The hypothesis is there a space-time relationship of conflict events in the United States. We are regressing `num_conflicts` in a given city on a given day on the `num_conflicts` in the same city on previous days and other cities on previous days, up to 2 weeks prior. All `num_conflicts` will be weighted by the `sum_num_*` columns. These `sum_num_*` columns measure the significance of the conflict events ocurring on that day in that city.
 
-## Database origin
+### Origin of `city_day_event_counts` table
 
 In order to understand the spatial-temporal relationship of conflict events in the United States from April 2013 until the recent past, the application is built on an aggregated subset of the GDELT database.
 
