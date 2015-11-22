@@ -24,6 +24,12 @@
   pointer-events: none;
 }
 
+.events-circle {
+  color: #ffffff;
+  fill: .000001;
+  opacity: .000001;
+}
+
 </style>
 <body>
 <script src="js/d3.v3.min.js"></script>
@@ -40,7 +46,7 @@
     dateiter = 0;
 
   
-  var minDate = new Date('01 April 2013'),
+  var minDate = new Date('02 April 2013'),
       maxDate = new Date('05 November 2015'),
       timescale = d3.time.scale()// .toISOString().substring(0,10)
 
@@ -125,7 +131,6 @@
 
   function renderCities() {
     updateMap = function(date) {
-      //circles.selectAll("*").exit();
       date = date.toISOString().substring(0,10)
       d3.json("json/events/" + date + ".json", function(events) {
         positions = [];
@@ -135,35 +140,39 @@
           positions.push(projection(location));
         });
 
-        circles.selectAll("circle")
-            .data(events)
-          .enter().append("svg:circle")
+        var datapoints = d3.select("#circles").selectAll("circle")
+          .data(events)
+          .enter()
+          .append("circle");
+          //.attr("class", 'events-circle');
+        datapoints.attr("class", 'events-circle')
+        datapoints
           .transition()
               .duration(475)
-              .attr("r", function(d,i){return 3})
-              .attr("cx", function(d,i){return positions[i][0]})
-              .attr("cy", function(d,i){return positions[i][1]})
               .style("fill", "#ff0000")
               .style("opacity", 1)
+              .attr("r", function(d,i){return d.nummentions/3})
+              .attr("cx", function(d,i){return positions[i][0]})
+              .attr("cy", function(d,i){return positions[i][1]})
             .transition()
               .duration(300)
-              .attr("r", function(d,i){return 3})
+              .attr("r", function(d,i){return d.nummentions/3})
               .attr("cx", function(d,i){return positions[i][0]})
               .attr("cy", function(d,i){return positions[i][1]})
               .style("fill", "#ff0000")
               .style("opacity", 0.7)
             .transition()
               .duration(250)
-              .attr("r", function(d,i){return 3})
+              .attr("r", function(d,i){return d.nummentions/3})
               .attr("cx", function(d,i){return positions[i][0]})
               .attr("cy", function(d,i){return positions[i][1]})
               .style("fill", "#ff0000")
               .style("opacity", 0.5)
             .transition()
-              .duration(150)
-              .attr("r", function(d,i){return 3})
+              .duration(250)
+              .attr("r", function(d,i){return d.nummentions/3})
               .attr("cx", function(d,i){return positions[i][0]})
-              .attr("cy", function(d,i){return d.y})
+              .attr("cy", function(d,i){return positions[i][1]})
               .style("fill", "#ff0000")
               .style("opacity", 0.2)
             .remove();
