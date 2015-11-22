@@ -1,0 +1,27 @@
+[
+  {
+    "globaleventid": "257171192",
+    "sqldate": "20130623",
+    "monthyear": "201306",
+    "year": "2013",
+    "fractiondate": "2013.474",
+    "eventcode": "110",
+    "quadclass": "3",
+    "nummentions": "6",
+    "numsources": "1",
+    "numarticles": "6",
+    "avgtone": "2.63852242744063",
+    "sourceurl": "http://www.salisburypost.com/article/20130623/SP03/130629887/1010",
+    "feature_id": "1017529",
+    "feature_name": "Albemarle",
+    "state_alpha": "NC",
+    "county_name": "Buncombe",
+    "county_numeric": "021",
+    "prim_lat_dec": "35.6115",
+    "prim_long_dec": "-82.5426",
+    "elev_in_m": "680",
+    "elev_in_ft": "2231",
+    "lat": 35.6115,
+    "long": -82.5426
+  }
+]

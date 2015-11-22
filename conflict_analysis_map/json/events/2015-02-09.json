@@ -1,0 +1,27 @@
+[
+  {
+    "globaleventid": "336020390",
+    "sqldate": "20150209",
+    "monthyear": "201502",
+    "year": "2015",
+    "fractiondate": "2015.1068",
+    "eventcode": "141",
+    "quadclass": "3",
+    "nummentions": "2",
+    "numsources": "1",
+    "numarticles": "2",
+    "avgtone": "6.91489361702128",
+    "sourceurl": "http://www.theautochannel.com/news/2015/02/09/124276-russell-smith-wins-2015-dealerrater-honda-dealer-year-award.html",
+    "feature_id": "1380948",
+    "feature_name": "Houston",
+    "state_alpha": "TX",
+    "county_name": "Harris",
+    "county_numeric": "201",
+    "prim_lat_dec": "29.7633",
+    "prim_long_dec": "-95.3633",
+    "elev_in_m": "11",
+    "elev_in_ft": "36",
+    "lat": 29.7633,
+    "long": -95.3633
+  }
+]
