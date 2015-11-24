@@ -1,0 +1,99 @@
+---
+title: "Space and Time Exploration"
+author: "Aimee Barciauskas"
+date: "November 24, 2015"
+output: html_document
+---
+
+```{r}
+library(RMySQL)
+library(reshape)
+
+# MySQL [gdelt]> create table count_city_event_days as select feature_id,count(*) as days_count from city_day_event_counts group by feature_id;
+# create table top_cities as select * from count_city_event_days order by days_count desc limit 100;
+# create table top_cities_with_events as select * from top_cities left join city_day_event_counts on top_cities.feature_id = city_day_event_counts.feature_id;
+#
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities_with_events where sqldate > 20130331")
+
+# n = -1 fetches all results, instead of default limit of first 500
+data <- dbFetch(res, n = -1)
+
+day_sums <- tapply(data$num_conflicts, data$sqldate, FUN=sum)
+head(day_sums)
+plot(day_sums)
+```
+
+There is a trend so we need to de-time-trendify. Standardize num_conflicts by date.
+
+```{r}
+# each num_mentions should be num_mentions - mean, sd for same day
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('mean','sqldate')
+
+plot(day_means[,'mean'])
+
+day_sds <- tapply(data$num_conflicts, data$sqldate, FUN=sd)
+day_sds <- cbind(as.matrix(day_sds), as.numeric(row.names(day_sds)))
+colnames(day_sds) <- c('sd','sqldate')
+
+plot(day_sds[,'sd'])
+```
+
+Looks like we should remove some initial time frame, due to clustering and lower variance from the rest of the trend.
+
+```{r}
+data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+
+# head(data[,c('sqldate','num_conflicts', 'sd', 'mean')], n = 100)
+
+data$std_num_conflicts <- (data$num_conflicts - data$mean)/data$sd
+
+# Sanity check
+# d2 <- subset(data, sqldate == 20150101)
+# sum(d2$std_num_conflicts)
+```
+
+Now we have std num mentions by day, we can see if there is autocorrelation.
+
+```{r}
+dates_and_featureids <- data[,c('std_num_conflicts','sqldate','feature_id')]
+
+# head(data_subset)
+events_by_date_city <- cast(data = dates_and_featureids, formula = sqldate ~ feature_id, value = 'std_num_conflicts')
+events_by_date_city[is.na(events_by_date_city)] <- 0
+# Reverse order to make the VAR equation work
+events_by_date_city <- apply(events_by_date_city, 2, rev)
+
+# p: number of days to regress upon
+# epsilon.t: matrix of dependent variables (events_by_date_and_city minus p + 1 days from start)
+# epsilon.tp: matrix of explanatory variables (events_by_date_and_city minus first day minus p days from start)
+p <- 2 # start easy
+total_days <- nrow(events_by_date_city)
+epsilon.t <- events_by_date_city[1:(total_days - (p+1)),]
+epsilon.tp <- events_by_date_city[2:(total_days - p),]
+```
+
+Starting with single city
+
+```{r}
+# estimate a model for the first column of epsilon on the first column of tp
+# Regress on 2 days
+epsilon.t.1 <- embed(c(NA,NA,epsilon.t[,2]), 3)
+data_to_regress <- data.frame(epsilon.t.1[3:nrow(epsilon.t.1),])
+
+model.1 <- lm(X1 ~ ., data = data_to_regress)
+summary(model.1)
+```
+
+Using VARs package: Estimate model for first 2 cities
+
+```{r}
+library(vars)
+
+vars.model <- VAR(epsilon.t[,1:2], p = 2)
+coef(vars.model)
+```
