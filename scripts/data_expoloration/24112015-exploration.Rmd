@@ -10,12 +10,12 @@ library(RMySQL)
 library(reshape)
 
 # MySQL [gdelt]> create table count_city_event_days as select feature_id,count(*) as days_count from city_day_event_counts group by feature_id;
-# create table top_cities as select * from count_city_event_days order by days_count desc limit 100;
-# create table top_cities_with_events as select * from top_cities left join city_day_event_counts on top_cities.feature_id = city_day_event_counts.feature_id;
+# create table top300_cities as select * from count_city_event_days order by days_count desc limit 300;
+# create table top300_cities_with_events as select city_day_event_counts.* from top300_cities left join city_day_event_counts on top300_cities.feature_id = city_day_event_counts.feature_id;
 #
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
-res <- dbSendQuery(con, "select * from top_cities_with_events where sqldate > 20130331")
+res <- dbSendQuery(con, "select * from top300_cities_with_events where sqldate > 20130331")
 
 # n = -1 fetches all results, instead of default limit of first 500
 data <- dbFetch(res, n = -1)
@@ -80,20 +80,208 @@ epsilon.tp <- events_by_date_city[2:(total_days - p),]
 Starting with single city
 
 ```{r}
-# estimate a model for the first column of epsilon on the first column of tp
-# Regress on 2 days
-epsilon.t.1 <- embed(c(NA,NA,epsilon.t[,2]), 3)
-data_to_regress <- data.frame(epsilon.t.1[3:nrow(epsilon.t.1),])
+# estimate a model for the first city (e.g. column) of epsilon on the first column of tp
 
-model.1 <- lm(X1 ~ ., data = data_to_regress)
+# Regress c city on nd days
+#  1) column of epsilon t is the city
+#  2) second argument to embed is the total number of days for which we collect the data
+#
+cidx <- 2 # index of city in epsilon.t
+ndays <- 3 # total number of days of data (e.g. 3 days = regress 3rd day on prior 2 days)
+epsilon.t.city1 <- embed(c(NA,NA,epsilon.t[,cidx]), ndays)
+colnames <- as.character(sapply(paste0('fid', colnames(epsilon.t)[cidx], '.day'), paste0, 0:(ndays-1)))
+data_to_regress <- data.frame(epsilon.t.1[3:nrow(epsilon.t.1),])
+colnames(data_to_regress) <- colnames
+formula = as.formula(paste(paste(colnames[1], '~'), paste(colnames[2:length(colnames)], collapse = '+')))
+model.1 <- lm(formula, data = data_to_regress)
+summary(model.1)
+
+# Grab pvalue example
+f <- summary(model.1)$fstatistic
+p <- as.numeric(pf(f[1],f[2],f[3],lower.tail=F))
+
+fitted.conflicts <- fitted.values(model.1)
+residuals <- fitted.conflicts - data_to_regress[,1]
+
+plot(residuals)
+```
+
+To build our own VAR, need to add to epsilon.t.city1 lagged values for all the other cities.
+
+```{r}
+epsilon.t <- events_by_date_city
+# Create epsilon.t.master
+# For each feature id in unique feature ids, build it as above,
+# cbind them all into a master matrix
+# regress city day 0 on all columns except those that match '.day0'
+ndays = 3
+feature_ids = colnames(epsilon.t)
+epsilon.t.master = matrix(0, nrow = total_days-ndays+1)
+
+for (idx in 1:length(feature_ids)) {
+  feature_id <- feature_ids[idx]
+  epsilon.t.city <- embed(c(NA,NA,epsilon.t[,feature_id]), ndays)
+  colnames <- as.character(sapply(paste0('fid', feature_id, '.day'), paste0, 0:(ndays-1)))
+  colnames(epsilon.t.city) <- colnames # Not that it matters
+  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+}
+
+# Remove column of zeroes, is dumb.
+epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+
+# NOW WE REGRESS!!!
+# ready for a looop...
+# but not build one yet
+current_indx <- 1
+cols_for_regression <- epsilon.t.master[,setdiff(1:ncol(epsilon.t.master), seq(1,ncol(epsilon.t.master), by=ndays))]
+
+model.1 <- lm(epsilon.t.master[,current_indx] ~ cols_for_regression)
 summary(model.1)
 ```
 
-Using VARs package: Estimate model for first 2 cities
+
+Okay so this does NOT look helpful, so let's backtrack to regressing just on the each cities' lagged values.
 
 ```{r}
-library(vars)
+# TODO: Add coefficient estimates
+#
+# create a model for each ndays-group of columns
+# regress
+# add p-value and formula to matrix
+pvalues_matrix <- data.frame(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
+colnames(pvalues_matrix) <- c('model','pvalue')
 
-vars.model <- VAR(epsilon.t[,1:2], p = 2)
-coef(vars.model)
+current_indx <- 1
+model_indx <- 1
+while (current_indx < ncol(epsilon.t.master)) {
+  # SELECT COLUMNS FOR CITY
+  cols_for_regression <- epsilon.t.master[,current_indx:(current_indx+(ndays-1))]
+  # RUN MODEL
+  model <- lm(cols_for_regression[,1] ~ cols_for_regression[,2:ndays])
+  # GET PVALUE
+  f <- summary(model)$fstatistic
+  p <- as.numeric(pf(f[1],f[2],f[3],lower.tail=F))
+  # ADD PVALUE AND MODEL TO MATRIX
+  pvalues_matrix[model_indx,'model'] <- paste(colnames(cols_for_regression)[1], '~', paste(colnames(cols_for_regression)[2:ndays], collapse = ' + '))
+  pvalues_matrix[model_indx,'pvalue'] <- p 
+  # INCREMENT INDEX
+  current_indx <- current_indx + ndays
+  model_indx <- model_indx + 1
+}
+
+head(pvalues_matrix)
 ```
+
+## Benjamini and Hochberg Theorem
+
+Find the first test whose p-value $p_{i} < \frac{i\alpha}{m}$. Then, reject this and all other tests with ordered p-values smaller than $p_{i}$.
+
+```{r}
+# Number of tests
+m <- nrow(pvalues_matrix)
+alpha <- 0.05
+
+ordered_pvalues <- pvalues_matrix[order(pvalues_matrix[,'pvalue']),]
+test_cols <- matrix(ncol = 2, nrow = nrow(ordered_pvalues))
+colnames(test_cols) <- c('test_stat', 'passed_test?')
+ordered_pvalues <- cbind(ordered_pvalues, test_cols)
+
+for (idx in 1:nrow(ordered_pvalues)) {
+  pvalue <- ordered_pvalues[idx,'pvalue']
+  test_stat <- (idx*alpha)/m
+  ordered_pvalues[idx,'test_stat'] <- test_stat
+  ordered_pvalues[idx,'passed_test?'] <- pvalue < test_stat
+}
+
+dim(ordered_pvalues[ordered_pvalues[,'passed_test?']==FALSE,])
+```
+
+EVERYTHING IS SIGNIFICANT. (with 100 cities, with 300, 7 fail)
+
+TODO:
+
+* Add coefficient estimates
+* Try different lag values.
+
+## Neighbors analysis
+
+Construct a matrix n cities x n cities with distances as values.
+
+Define `neighborly` as distance d, all those cities for city x having a distance < d are defined as its neighbors.
+
+Construct a model for city x that is avg of the stdzd number of conflicts for the neighbors on the previous day.
+
+```{r}
+library(Imap)
+
+distances_matrix <- matrix(nrow = ncol(events_by_date_city), ncol = ncol(events_by_date_city))
+dimnames(distances_matrix) <- list(colnames(events_by_date_city), colnames(events_by_date_city))
+
+for (cidx in 1:ncol(distances_matrix)) {
+  (city1.feature_id <- colnames(distances_matrix)[cidx])
+
+  for (ridx in 1:nrow(distances_matrix)) {
+    city2.feature_id <- rownames(distances_matrix)[ridx]
+
+    if (city2.feature_id != city1.feature_id) {
+      res <- dbSendQuery(con,
+                         paste("select prim_long_dec,prim_lat_dec from top300_cities_with_events where feature_id =",
+                               city1.feature_id, 'limit 1'))
+      city1.loc <- dbFetch(res)
+      
+      res <- dbSendQuery(con,
+                         paste("select prim_long_dec,prim_lat_dec from top300_cities_with_events where feature_id =",
+                               city2.feature_id, 'limit 1'))
+      city2.loc <- dbFetch(res)
+      
+      dist_btw_cities <- gdist(
+        as.numeric(city1.loc['prim_long_dec']),
+        as.numeric(city1.loc['prim_lat_dec']),
+        as.numeric(city2.loc['prim_long_dec']),
+        as.numeric(city2.loc['prim_lat_dec']),
+        units = 'miles')
+      
+      distances_matrix[city1.feature_id,city2.feature_id] <- dist_btw_cities
+      distances_matrix[city2.feature_id,city1.feature_id] <- dist_btw_cities
+    }
+  }
+}
+head(distances_matrix)
+```
+
+Now we have the distances matrix, let's define neighbors by quantiles - that is being neighbor means being in the xth percentile of those cities by near distance.
+
+```{r}
+neighborly_quantile <- 0.01
+
+for (cidx in 1:ncol(distances_matrix)) {
+  Sys.sleep(2)
+  city_distances <- na.omit(distances_matrix[,cidx])
+  neighborly_threshold <- as.numeric(quantile(na.omit(city_distances), probs = c(neighborly_quantile)))
+  print(neighborly_threshold)
+  # cols where dist <- neighborly
+  feature_ids = names(city_distances[city_distances < neighborly_threshold])
+  epsilon.t.cityn = matrix(nrow = total_days-ndays+1, ncol = 0)
+  
+  for (idx in 1:length(feature_ids)) {
+    feature_id <- feature_ids[idx]
+    epsilon.t.city <- embed(c(NA,NA,epsilon.t[,feature_id]), ndays)
+    colnames <- as.character(sapply(paste0('fid', feature_id, '.day'), paste0, 0:(ndays-1)))
+    colnames(epsilon.t.city) <- colnames # Not that it matters
+    epsilon.t.cityn <- cbind(epsilon.t.cityn, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+  }
+  
+  # NOW WE REGRESS!!!
+  # ready for a looop...
+  # but not build one yet
+  current_indx <- 1
+  cols_for_regression <- epsilon.t.cityn[,setdiff(1:ncol(epsilon.t.cityn), seq(1,ncol(epsilon.t.cityn), by=ndays))]
+  
+  model.1 <- lm(epsilon.t.cityn[,current_indx] ~ cols_for_regression)
+  print(summary(model.1))
+}
+```
+
+Nothing interesting is coming out of this - I think next step would be region effects or taking some average or sum of neighbors.
+
+Another next step is to take into account weekday effects and populations.
