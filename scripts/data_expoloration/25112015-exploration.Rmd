@@ -1,0 +1,62 @@
+---
+title: "Other Variables Exploration"
+author: "Aimee Barciauskas"
+date: "November 25, 2015"
+output: html_document
+---
+
+```{r}
+library(RMySQL)
+library(reshape)
+library(ggplot2)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130331")
+data <- dbFetch(res, n = -1)
+```
+
+## De-trendify
+
+```{r}
+# each num_mentions should be num_mentions - mean, sd for same day
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('mean','sqldate')
+
+day_sds <- tapply(data$num_conflicts, data$sqldate, FUN=sd)
+day_sds <- cbind(as.matrix(day_sds), as.numeric(row.names(day_sds)))
+colnames(day_sds) <- c('sd','sqldate')
+
+data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+
+data$std_num_conflicts <- (data$num_conflicts - data$mean)/data$sd
+
+# Sanity check
+# d2 <- subset(data, sqldate == 20150101)
+# sum(d2$std_num_conflicts)
+```
+
+
+Determine if some cities have conflict growning proportionately
+
+```{r}
+data$geonameid <- factor(data$geonameid)
+geonameids <- levels(data$geonameid)
+data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
+
+for (i in 1:(length(geonameids)/2)) {
+  d2 <- subset(data, geonameid == geonameids[i])
+  x <- d2$datef
+  y <- d2[,'std_num_conflicts']
+  smoothingSpline = smooth.spline(x, y, spar=0.25)
+  if (i == 1) {
+    plot(smoothingSpline, type = 'l', ylim = c(-1,10))  
+  } else {
+    lines(smoothingSpline)
+  }
+}
+
+
+```

@@ -57,8 +57,8 @@ create external table usa_conflict_events (
   ActionGeo_FullName STRING,
   ActionGeo_CountryCode STRING,
   ActionGeo_ADM1Code STRING,
-  ActionGeo_Lat STRING,
-  ActionGeo_Long STRING,
+  ActionGeo_Lat DOUBLE,
+  ActionGeo_Long DOUBLE,
   ActionGeo_FeatureID STRING,
   DATEADDED BIGINT,
   SOURCEURL STRING

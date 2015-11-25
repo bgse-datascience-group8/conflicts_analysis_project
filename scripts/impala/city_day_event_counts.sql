@@ -34,3 +34,24 @@ AS
 -- | 2036623    |
 -- +------------+
 -- Returned 1 row(s) in 0.35s
+
+-- for reloading into impala
+use gdelt;
+DROP TABLE IF EXISTS city_day_event_counts;
+CREATE EXTERNAL TABLE `city_day_event_counts` (
+  `num_conflicts` bigint,
+  `sum_num_mentions` double,
+  `sum_num_articles` double,
+  `sum_num_sources` double,
+  `sqldate` bigint,
+  `feature_name` STRING,
+  `feature_id` STRING,
+  `state_alpha` STRING,
+  `county_name` STRING,
+  `prim_lat_dec` DOUBLE,
+  `prim_long_dec` DOUBLE
+)
+row format delimited
+fields terminated by '|'
+stored as textfile
+location '/user/gdelt/city_day_event_counts';

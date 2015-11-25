@@ -9,7 +9,7 @@ output: html_document
 library(RMySQL)
 library(reshape)
 
-# MySQL [gdelt]> create table count_city_event_days as select feature_id,count(*) as days_count from city_day_event_counts group by feature_id;
+# MySQL [gdelt]> create table count_city_event_days as select feature_id,count(*) as days_count from city_day_event_counts_plus group by feature_id;
 # create table top300_cities as select * from count_city_event_days order by days_count desc limit 300;
 # create table top300_cities_with_events as select city_day_event_counts.* from top300_cities left join city_day_event_counts on top300_cities.feature_id = city_day_event_counts.feature_id;
 #

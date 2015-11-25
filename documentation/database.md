@@ -78,3 +78,13 @@ The process for building the conflict analysis database is as follows:
 #### Final script
 
 The current dump file can be found on Google Drive: [`city_day_event_counts.sql`](https://drive.google.com/a/barcelonagse.eu/file/d/0B39HWOgUiKJrV08xWVVmcUY0Snc/view?usp=sharing).
+
+
+#### Appendix / Post Mortem
+
+We were seeing some oddities in the representation of cities. So we went with a second approach for grouping the data:
+
+1. Group by lat and long (`impala/city_day_event_counts_v2.sql`)
+2. Use geonames cities (`impala/geonames_cities.sql`)
+3. To add city metadata (`impala/city_day_event_counts_plus.sql`)
+4. Limit to top 100 represented data (`sql/top_cities.sql`)
