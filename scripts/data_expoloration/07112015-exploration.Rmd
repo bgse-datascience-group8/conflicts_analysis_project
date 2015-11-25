@@ -1,0 +1,206 @@
+---
+title: "GDELT Data Exploration"
+author: "Aimee Barciauskas"
+date: "November 7, 2015"
+output: pdf_document
+---
+
+```{r}
+library(RMySQL)
+library(ggmap)
+library(plyr)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from random_events")
+# n = -1 fetches all results, instead of default limit of first 500
+data <- dbFetch(res, n = -1)
+
+# Want to geocode all events
+# gc2 <- as.numeric(data[1,c('ActionGeo_Long', 'ActionGeo_Lat')])
+# res <- revgeocode(gc2, output=c('all'))
+
+# FeatureID's - GNIS coding
+# http://geonames.usgs.gov/domestic/download_data.htm
+# http://geonames.usgs.gov/domestic/states_fileformat.htm
+#
+# UNNECESSARY TO DO THIS, just here for future reference
+# How to scrape file format table from webpage
+# install.packages('XML')
+# library(XML)
+# file_format_url <- 'http://geonames.usgs.gov/domestic/states_fileformat.htm'
+# file_format_table <- readHTMLTable(file_format_url, header=T, which=1,stringsAsFactors=F)
+# Downloading National FeatureID data
+filename <- 'NationalFile_20151001'
+download.file(paste0('http://geonames.usgs.gov/docs/stategaz/', filename, '.zip'), paste0(filename, '.zip'))
+unzip(paste0(filename, '.zip'))
+feature_id_data <- read.csv(paste0(filename, '.txt'), sep="|")
+dbWriteTable(con, "gnis_feature_ids", feature_id_data, append = TRUE)
+
+# Identify cities for codeable data
+data[,'formatted.ActionGeo_FeatureID'] <- as.numeric(data[,'ActionGeo_FeatureID'])
+codeable_data <- subset(data, data[, 'formatted.ActionGeo_FeatureID'] > 0)
+gnis_colnames <- c("row_names","FEATURE_ID","FEATURE_NAME","FEATURE_CLASS","STATE_ALPHA","STATE_NUMERIC","COUNTY_NAME","COUNTY_NUMERIC","PRIMARY_LAT_DMS","PRIM_LONG_DMS","PRIM_LAT_DEC","PRIM_LONG_DEC","SOURCE_LAT_DMS","SOURCE_LONG_DMS","SOURCE_LAT_DEC","SOURCE_LONG_DEC","ELEV_IN_M","ELEV_IN_FT","MAP_NAME","DATE_CREATED","DATE_EDITED")
+codeable_data <- cbind(
+  codeable_data,
+  matrix(0, nrow=nrow(codeable_data), ncol=21, dimnames=list(1:nrow(codeable_data), gnis_colnames)))
+
+# This is kind of dumb, why not create a view?
+# for (i in 1:nrow(codeable_data)) {
+#   feature_query <- paste0("select * from gnis_feature_ids where FEATURE_ID = ", codeable_data[i,'formatted.ActionGeo_FeatureID'])
+#   res <- dbSendQuery(con, feature_query)
+#   ans <- dbFetch(res)
+#   if (nrow(ans) == 1) codeable_data[i,61:81] <- ans
+#   print(paste('Done processing', i, 'datum'))
+# }
+# Wrote them to a file write.matrix(codeable_data, 'data_coded_by_gnis')
+feature_names_count <- count(codeable_data, 'FEATURE_NAME')
+(qs <- quantile(feature_names_count$freq, probs=seq(0,1,0.02))) # => only 20 at 99%
+popular_feature_names <- subset(feature_names_count, freq > 9 & FEATURE_NAME != 0)
+
+data_in_populous_location <- subset(codeable_data, FEATURE_NAME %in% popular_feature_names[,'FEATURE_NAME'])
+nrow(data_in_populous_location)
+
+# QuadClass Hist
+# 1=Verbal Cooperation, 2=Material Cooperation, 3=Verbal Conflict, 4=Material Conflict
+#   GDELT-Data_Format_Codebook pg 4
+counts <- count(data, "QuadClass")
+counts$QuadClassName <- c('Verbal Cooperation', 'Material Cooperation', 'Verbal Conflict', 'Material Conflict')
+barplot(counts$freq, names.arg = counts$QuadClassName)
+
+eventRootCodesDict <- c(
+ "public_statement",
+ "appeal",
+ "intent_to_cooperate",
+ "consult",
+ "diplomatic_cooperation",
+ "material_cooperation",
+ "provide_aid",
+ "yield",
+ "investigate",
+ "demand",
+ "disapprove",
+ "reject",
+ "threaten",
+ "protest",
+ "exhibit_force",
+ "reduce_relations",
+ "coerce",
+ "assault",
+ "fight",
+ "mass_violence")
+
+# Group events by day
+library(plyr)
+day_counts <- count(data, "SQLDATE")
+day_and_type_counts <- count(data, c("EventRootCode", "SQLDATE"))
+
+for (i in 1:nrow(day_and_type_counts)) {
+  date <- day_and_type_counts[i,'SQLDATE']
+  total_number_of_events <- day_counts[day_counts[,'SQLDATE'] == date,][,'freq']
+  day_and_type_counts[i,'days_share'] <- day_and_type_counts[i,'freq'] / total_number_of_events
+  day_and_type_counts[i,'EventRootName'] <- eventRootCodesDict[day_and_type_counts[i,'EventRootCode']]
+}
+
+# Now we want to construct a matrix for each day and city
+agg.colnames <- as.character(sapply(eventRootCodesDict, paste0, '_share'))
+agg.day_shares <- matrix(0,
+  nrow = nrow(day_counts),
+  ncol = length(eventRootCodesDict),
+  dimnames = list(day_counts[,'SQLDATE'], agg.colnames))
+
+for (i in 1:nrow(day_and_type_counts)) {
+  date <- toString(day_and_type_counts[i,'SQLDATE'])
+  event_type <- day_and_type_counts[i,'EventRootName']
+  agg.day_shares[date, paste0(event_type, '_share')] <- day_and_type_counts[i,'days_share']
+}
+
+agg.day_shares <- as.data.frame(agg.day_shares)
+
+public_statement_shares <- agg.day_shares[,'public_statement_share']
+n <- length(public_statement_shares)
+public_statement_shares.lag <- c(NA, public_statement_shares[1:(n-1)])
+
+lm.lag <- lm(public_statement_shares ~ public_statement_shares.lag)
+summay(lm.lag)
+
+
+# Group events by day and location
+data <- data_in_populous_location
+day_location_counts <- count(data, c("SQLDATE", 'FEATURE_NAME'))
+day_location_and_type_counts <- count(data, c("EventRootCode", "SQLDATE", 'FEATURE_NAME'))
+
+for (i in 1:nrow(day_location_and_type_counts)) {
+  date <- day_location_and_type_counts[i,'SQLDATE']
+  location <- day_location_and_type_counts[i,'FEATURE_NAME']
+  total_number_of_events <- day_location_counts[
+    day_location_counts[,'SQLDATE'] == date & day_location_counts[,'FEATURE_NAME'] == location,][,'freq']
+  day_location_and_type_counts[i,'days_share'] <- day_location_and_type_counts[i,'freq'] / total_number_of_events
+  day_location_and_type_counts[i,'EventRootName'] <- eventRootCodesDict[day_location_and_type_counts[i,'EventRootCode']]
+}
+
+library(lubridate)
+startdate <- strptime(min(data[,'SQLDATE']), "%Y%m%d")
+enddate <- strptime(max(data[,'SQLDATE']), "%Y%m%d")
+dates <- seq(startdate, enddate, by = 'day')
+dates <- format(dates, '%Y%m%d')
+
+# fill up first col of matrix with the result
+# fill up second col of matrix with result - 1
+#
+# third col - date of proportion from first col,
+# fourth col - event type
+# fifth col - city
+cities <- unique(data[,'FEATURE_NAME'])
+niters <- length(eventRootCodesDict) * length(cities)
+ndates <- length(dates)
+dates_seq <- rep(dates, length(eventRootCodesDict)*length(cities))
+cities_seq <- rep(cities, each = length(eventRootCodesDict)*ndates)
+# cities ntimes each event type ndates times
+events_seq <- rep(rep(eventRootCodesDict, each = ndates), length(cities))
+
+proportions_matrix <- matrix(0, nrow = niters*ndates, ncol = 5)
+dimnames(proportions_matrix)[[2]] <- c('prop', 'prop.lag', 'SQLDATE', 'event_type', 'city')
+proportions_matrix <- as.data.frame(proportions_matrix)
+
+proportions_matrix[,'SQLDATE'] <- dates_seq
+proportions_matrix[,'event_type'] <- events_seq
+proportions_matrix[,'city'] <- cities_seq
+# woohoo!
+
+# Ok, so no we want to go get the proportions for each, lag them and append both.
+for (idx in 1:nrow(proportions_matrix)) {
+  print(paste0('processed row: ', idx))
+  row <- proportions_matrix[idx,]
+  sqldate <- row['SQLDATE'][[1]]
+  event_type <- row['event_type'][[1]]
+  city <- row['city'][[1]]
+  
+  # find day_location_and_type_counts proportion matching
+  pp <- day_location_and_type_counts[
+    day_location_and_type_counts[,'SQLDATE'] == sqldate & 
+    day_location_and_type_counts[,'FEATURE_NAME'] == city &
+    day_location_and_type_counts[,'EventRootName'] == event_type, ]
+  if (nrow(pp) > 0) proportions_matrix[idx, 'prop'] <- as.numeric(pp[,'days_share'])
+}
+
+# Now want to iterate through each chunk of ndays
+batch.size <- ndates # constant
+batch.pointer <- 1 # inc batch size
+batch.offset <- 0
+while (batch.pointer < nrow(proportions_matrix)) {
+  current_range <- batch.pointer:(batch.offset + batch.size)
+  batch.current <- proportions_matrix[current_range,]
+
+  n <- nrow(batch.current)
+  proportions_matrix[current_range, 'prop.lag'] <- c(NA, batch.current[1:(n-1), 'prop'])
+
+  print(paste('done with batch: ', batch.pointer, '-', batch.offset + batch.size))
+  batch.pointer <- batch.pointer + batch.size
+  batch.offset <- batch.offset + batch.size
+}
+
+lm.lag <- lm(as.numeric(proportions_matrix[,'prop']) ~ as.numeric(proportions_matrix[,'prop.lag']))
+summary(lm.lag)
+```
+

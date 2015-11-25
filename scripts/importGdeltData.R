@@ -6,18 +6,19 @@
 #
 # To execute from the commandline:
 # nohup R CMD BATCH importGdeltData.R &
-#
+# 
+#install.packages('RMySQL', dependencies=TRUE, repos='http://cran.rstudio.com/')
+#install.packages('lubridate', dependencies=TRUE, repos='http://cran.rstudio.com/')
+
 library(RMySQL)
+library(lubridate)
 
 # REMOTE DB
-# con <- dbConnect(RMySQL::MySQL(),
-#   dbname = "gdelt",
-#   host = "ds-group8.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
-#   user = "group8",
-#   password = Sys.getenv("DB_PASSWORD"))
-
-# LOCAL DB
-con <- dbConnect(RMySQL::MySQL(), group = "gdelt", dbname = "gdelt")
+con <- dbConnect(RMySQL::MySQL(),
+  dbname = "gdelt",
+  host = "group8-db.cgwo8rgbvpyh.eu-west-1.rds.amazonaws.com",
+  user = "group8",
+  password = Sys.getenv("DB_PASSWORD"))
 
 colHeaders <- c('GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year',
 'FractionDate', 'Actor1Code', 'Actor1Name', 'Actor1CountryCode',
@@ -37,12 +38,10 @@ colHeaders <- c('GLOBALEVENTID', 'SQLDATE', 'MonthYear', 'Year',
 'ActionGeo_Lat', 'ActionGeo_Long', 'ActionGeo_FeatureID', 'DATEADDED',
 'SOURCEURL')
 
-# TODO: Take user input?
-library(lubridate)
 start <- 20130401
-ndays <- 2
 startdate <- strptime(start, "%Y%m%d")
-enddate <- startdate + days(ndays)
+ndays <- now() - startdate
+enddate <- now()
 days <- seq(startdate, enddate, by = 'day')
 days <- format(days, '%Y%m%d')
 
@@ -50,7 +49,7 @@ for (nday in 1:ndays) {
   day <- days[nday]
   filename <- paste0(day, '.export.CSV')
   zip_filename <- paste0(filename, '.zip')
-  download.file(paste0('http://data.gdeltproject.org/events/', zip_filename), paste(zip_filename))
+  download.file(paste0('http://data.gdeltproject.org/events/', zip_filename), zip_filename)
   print(paste0('Downloaded data for ', day))
   unzip(zip_filename)
   data <- read.csv(filename, sep = '\t', stringsAsFactors = FALSE)
