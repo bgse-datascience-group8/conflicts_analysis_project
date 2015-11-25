@@ -170,6 +170,7 @@ for (i in 1:100) {
   cities_plotting[,i] = (cities_stand[,i] / max_per_city[i])*100
 }
   
+plot(1:nrow(cities_plotting), cities_plotting[,6], type = "l")
 
 # compute convariance matrix for cities with more activity
 
@@ -177,6 +178,7 @@ for (i in 1:100) {
   city = data[ which(data$feature_name == top_100_cities[i]), c(1,5)]
   print(nrow(city))
 }
+
 
 # create normalized events per city per day and impact per city per day
 data = merge(data, events_by_date, by.x = "sqldate", by.y = "sqldate")
