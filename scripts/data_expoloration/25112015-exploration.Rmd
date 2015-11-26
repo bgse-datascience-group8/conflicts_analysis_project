@@ -57,6 +57,8 @@ for (i in 1:(length(geonameids)/2)) {
     lines(smoothingSpline)
   }
 }
-
-
 ```
+
+Should remove DC...? Also notice there is a lot of weight just below zero, most of the variation is in those just above it - can this all be explained by population?
+
+...
