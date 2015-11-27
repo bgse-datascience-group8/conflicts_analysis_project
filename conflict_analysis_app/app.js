@@ -1,6 +1,9 @@
 var express = require('express');
 var app = express();
 
+app.set('view engine', 'jade');
+app.use(express.static('public'));
+
 app.set('views', './views');
 app.set('view engine', 'jade');
 
@@ -11,9 +14,7 @@ app.get('/', function (req, res) {
 });
 
 app.get('/map', function (req, res) {
-  res.render('map', {
-    title: 'Here be a map'
-  });
+  res.render('map');
 });
 
 var mysql      = require('mysql');
@@ -26,10 +27,10 @@ var connection = mysql.createConnection({
 
 connection.connect();
 
-connection.query('select * from top_cities limit 1', function(err, rows, fields) {
-  if (err) throw err;
-  console.log('The solution is: ', rows[0]);
-});
+// connection.query('select * from top_cities limit 1', function(err, rows, fields) {
+//   if (err) throw err;
+//   console.log('The solution is: ', rows[0]);
+// });
 
 connection.end();
 
