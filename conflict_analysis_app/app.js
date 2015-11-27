@@ -10,6 +10,12 @@ app.get('/', function (req, res) {
   });
 });
 
+app.get('/map', function (req, res) {
+  res.render('map', {
+    title: 'Here be a map'
+  });
+});
+
 var mysql      = require('mysql');
 var connection = mysql.createConnection({
   host     : 'localhost',
