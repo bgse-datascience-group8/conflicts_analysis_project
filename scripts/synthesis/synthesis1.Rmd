@@ -1,0 +1,43 @@
+---
+title: "Synthesis pt1"
+author: "Aimee Barciauskas"
+date: "November 28, 2015"
+output: html_document
+---
+
+```{r, echo=FALSE}
+library(RMySQL)
+library(reshape)
+library(ggplot2)
+library(ggmap)
+library(scales)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130331")
+data <- dbFetch(res, n = -1)
+
+# Standard data formatting
+data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
+data$city <- paste0(data$name, ', ', data$admin1_code)
+
+## Removing Washington, D.C. (for now)
+data <- subset(data, geonameid != '4140963')
+```
+
+# Data Summary
+
+```{r, echo = FALSE}
+united_states <- get_map(location = "United Stats", maptype = "roadmap", zoom = 5)
+
+p <- ggmap(united_states) +
+  geom_polygon(data = data,
+               aes(x = longitude, y = latitude, group = city, fill = num_conflicts),
+               colour = NA, alpha = 0.5) +
+    labs(fill = "") +
+    theme_nothing(legend = TRUE) +
+    guides(fill = guide_legend(reverse = TRUE, override.aes = 
+        list(alpha = 1)))
+
+ggsave(p, file = "map9.png", width = 5, height = 4, type = "cairo-png")
+```
