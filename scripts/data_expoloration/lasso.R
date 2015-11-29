@@ -1,6 +1,5 @@
-
 lasso.reg <- function(y, X, lambda) {
-  max.iter <- 1000
+  max.iter <- 20
   P <- ncol(X)
   
   beta <- solve(t(X)%*%X, t(X)%*%y)
@@ -8,7 +7,6 @@ lasso.reg <- function(y, X, lambda) {
   
   # Do until convergence
   for (iter in 1:max.iter) {
-    cat('.')
     for (k in 1:P) {
       y.minus_k <- y - X[,setdiff(1:P,k)] %*% beta[setdiff(1:P,k)]
       x.k <- X[,k]
@@ -18,11 +16,9 @@ lasso.reg <- function(y, X, lambda) {
       beta.k.ls <- cov/var
       beta[k] <- sign(beta.k.ls)*max(c(abs(beta.k.ls) - lambda/(2*var), 0))
     }
-    if (sum((beta - beta.prev)**2) < 1e-6) {
-      print(paste0('finished in ', iter, 'iterations'))
-      return(beta)
-    }
+    if (sum((beta - beta.prev)**2) < 1e-6) { return(beta) }
     beta.prev <- beta
   }
+  
   beta
 }

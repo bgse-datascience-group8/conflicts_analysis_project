@@ -87,8 +87,22 @@ my.cov <- function(X) {
   diff_matrix <- as.matrix(X - means)
   1/(n-1) * t(diff_matrix) %*% diff_matrix
 }
+
+my.cor <- function(cov.matrix) {
+  # expect a square matrix
+  cor.matrix <- matrix(0, nrow = nrow(cov.matrix), ncol = nrow(cov.matrix))
+  for (i in 1:ncol(cov.matrix)) {
+    for (j in 1:nrow(cov.matrix)) {
+      cor.matrix[i,j] <- cov.matrix[i,j]/(sqrt(cov.matrix[i,i])*sqrt(cov.matrix[j,j]))
+    }
+  }
+  cor.matrix
+}
 # my.cov(X)[1:3,1:3]
 # cov(X)[1:3,1:3]
+
+# my.cor(cov(X))[1:3,1:3]
+# cor(X)[1:3,1:3]
 ```
 
 Calculate partial correlation

@@ -9,12 +9,11 @@ output: html_document
 library(RMySQL)
 library(reshape)
 library(ggplot2)
-library(ggmap)
-library(scales)
+library(dplyr)
 
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
-res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130331")
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130401")
 data <- dbFetch(res, n = -1)
 
 # Standard data formatting
@@ -25,19 +24,441 @@ data$city <- paste0(data$name, ', ', data$admin1_code)
 data <- subset(data, geonameid != '4140963')
 ```
 
+# Data standardization
+
+[ADD ME]: plots for before and after
+
+```{r, echo = FALSE}
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('date_mean','sqldate')
+
+day_sds <- tapply(data$num_conflicts, data$sqldate, FUN=sd)
+day_sds <- cbind(as.matrix(day_sds), as.numeric(row.names(day_sds)))
+colnames(day_sds) <- c('date_sd','sqldate')
+
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
+
+data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
+```
+
 # Data Summary
 
 ```{r, echo = FALSE}
-united_states <- get_map(location = "United Stats", maptype = "roadmap", zoom = 5)
+random_cities <- sample(unique(data$city), 21)
+random_sample <- subset(data, city %in% random_cities)
 
-p <- ggmap(united_states) +
-  geom_polygon(data = data,
-               aes(x = longitude, y = latitude, group = city, fill = num_conflicts),
-               colour = NA, alpha = 0.5) +
-    labs(fill = "") +
-    theme_nothing(legend = TRUE) +
-    guides(fill = guide_legend(reverse = TRUE, override.aes = 
-        list(alpha = 1)))
+ggplot(data = random_sample,
+       aes(x = datef, y = std_num_conflicts, color = city)) +       
+  geom_line(aes(group = city))
 
-ggsave(p, file = "map9.png", width = 5, height = 4, type = "cairo-png")
+ggplot(data = random_sample,
+       aes(x = datef, y = std_num_conflicts, color = city)) +       
+  stat_smooth(aes(group = city), method = 'lm')
+```
+
+## Weekly trends
+
+```{r, echo = FALSE}
+#create a vector of weekdays
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+
+data$wDay <- factor((weekdays(data$datef) %in% weekdays1), 
+         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+
+start_date <- as.Date('20150901', format = '%Y%m%d')
+end_date <- as.Date('20151031', format = '%Y%m%d')
+
+fall2015 <- subset(data, datef > start_date & datef < end_date)
+
+fall2015 <- fall2015 %>% group_by(datef) %>% summarise(sum_num_conf = sum(num_conflicts))
+fall2015$wDay <- factor((weekdays(fall2015$date) %in% weekdays1), 
+         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+
+ggplot(data = fall2015, aes(y = sum_num_conf, x = datef, fill=wDay)) + geom_bar(stat='identity') + scale_x_date(fall2015$datef) 
+```
+
+## Auto-correlation
+
+```{r, echo = FALSE}
+library(reshape2)
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+
+
+epsilon.t <- events_by_date_city
+rownames(epsilon.t) <- epsilon.t$datef
+epsilon.t <- epsilon.t[,setdiff(colnames(epsilon.t), 'datef')]
+total_days <- length(unique(data$datef))
+# Create epsilon.t.master
+# For each feature id in unique feature ids, build it as above,
+# cbind them all into a master matrix
+# regress city day 0 on all columns except those that match '.day0'
+ndays = 14
+cities = colnames(epsilon.t)
+epsilon.t.master = matrix(nrow = total_days-ndays+1)
+
+for (idx in 1:length(cities)) {
+  city <- cities[idx]
+  epsilon.t.city <- embed(c(rep(NA, ndays-1),epsilon.t[,city]), ndays)
+  colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(ndays-1)))
+  colnames(epsilon.t.city) <- colnames # Not that it matters
+  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+}
+
+epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+```
+
+For a single city: Boston
+
+```{r, echo = FALSE}
+boston <- epsilon.t.master[,c('Boston, MA.day0','Boston, MA.day1')]
+least_sqrs_beta <- solve(t(boston[,2])%*%boston[,2]) %*% t(boston[,2]) %*% boston[,1]
+# Compare with: model <- lm(boston[,1] ~ 0 + boston[,2])
+least_sqrs_beta.fitted <- boston[,2] %*% least_sqrs_beta
+# Compare least_sqrs_beta.fitted with fitted.values(model)
+
+least_sqrs_beta.residuals <- boston[,1] - least_sqrs_beta.fitted
+least_sqrs_beta.var <- (t(least_sqrs_beta.residuals)%*%least_sqrs_beta.residuals)/(nrow(boston)-1)
+least_sqrs_beta.se <- sqrt(least_sqrs_beta.var * solve(t(boston[,2]) %*% boston[,2]))
+
+# Wald
+wald.stat <- (least_sqrs_beta - 0)/(least_sqrs_beta.se)
+wald.pvalue <- function(wald.stat, df) {
+  1 - pt(abs(wald.stat), df = df)
+}
+wald.pvalue(wald.stat, nrow(boston)-1)
+
+plot(least_sqrs_beta.fitted, boston[,1])
+plot(least_sqrs_beta.residuals)
+```
+
+# Helper functions
+
+```{r, echo = FALSE}
+my.lm <- function(y, X) solve(t(X)%*%X) %*% t(X) %*% y
+
+# sample.mean <- mean(X)
+# sst <- sum((X-sample.mean)**2)
+# sst.df <- ncol(X)*nrow(X) - 1
+
+ssw <- function(X) {
+  means <- colMeans(X)
+  diffs <- c()
+  for (i in 1:ncol(X)) {
+    # for every item in col x
+    # sum squared differences
+    diffs <- append(diffs, (X[,i] - means[i])**2)
+  }
+  sum(diffs)
+}
+
+ssw.df <- function(X) {ncol(X)*(nrow(X) - 1)}
+
+ssb <- function(X) {
+  sample.mean <- mean(X)
+  means <- colMeans(X)
+  diffs <- c()
+  for (i in 1:length(means)) {
+    diffs <- append(diffs, sum(nrow(X)*((means[i] - sample.mean)**2)))
+  }
+  sum(diffs)
+}
+
+ssb.df <- function(X) {ncol(X) - 1}
+
+(f.stat <- (ssb(X)/ssb.df(X)) / (ssw(X)/ssw.df(X)))
+
+my.rss <- function(y, X) {
+  beta.hat <- my.lm(y, X)
+  fitted.values <- X%*%beta.hat
+  sum((y - fitted.values)**2)
+}
+
+#f.stat.v1 <- function(X)((rss1 - rss2)/(m-1)) / (rss2/(length(y)-m+1)))
+
+# FIXME: Duplicate work with my.lm here
+# only works for beta.hat length = 1
+my.pvalue <- function(y, X) {
+  beta.hat <- my.lm(y, X)
+  fitted.values <- X%*%beta.hat
+  residuals <- y - fitted.values
+  var <- (t(residuals)%*%residuals)/(length(y)-1)
+  se <- sqrt(var)
+
+  wald.stat <- (beta.hat - 0)/se
+  1 - pt(abs(wald.stat), df = length(y)-1)
+}
+```
+
+## Collect p-values
+
+
+```{r, echo = FALSE}
+pvalues_matrix <- matrix(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
+colnames(pvalues_matrix) <- c('model','pvalue')
+
+coeffs <- list()
+  current_indx <- 1
+  model_indx <- 1
+
+while (current_indx < ncol(epsilon.t.master)) {
+  # SELECT COLUMNS FOR CITY
+  #current_indx <- 1
+  cols_for_regression <- epsilon.t.master[,current_indx:(current_indx+(ndays-1))]
+
+  # get coefficients
+  betas <- my.lm(cols_for_regression[,1], cols_for_regression[,2:ndays])
+  print(betas)
+  # ADD PVALUE AND MODEL TO MATRIX
+  pvalues_matrix[model_indx,'model'] <- paste(colnames(cols_for_regression)[1], '~', paste(colnames(cols_for_regression)[2:ndays], collapse = ' + '))
+  pvalues_matrix[model_indx,'pvalue'] <- my.pvalue(cols_for_regression[,1], cols_for_regression[,2:ndays])
+  
+  coeffs[colnames(cols_for_regression)[1]] = betas
+                          
+  # INCREMENT INDEX
+  current_indx <- current_indx + ndays
+  model_indx <- model_indx + 1
+}
+
+```
+
+For a specific lag
+
+```{r, echo = FALSE}
+ndays <- 14
+epsilon.t.master = matrix(nrow = total_days-ndays+1)
+
+for (idx in 1:length(cities)) {
+  city <- cities[idx]
+  epsilon.t.city <- embed(c(rep(NA, ndays-1),epsilon.t[,city]), ndays)
+  colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(ndays-1)))
+  colnames(epsilon.t.city) <- colnames # Not that it matters
+  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+}
+
+epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+
+pvalues_matrix <- data.frame(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
+colnames(pvalues_matrix) <- c('model','pvalue')
+
+current_indx <- 1
+model_indx <- 1
+
+while (current_indx < ncol(epsilon.t.master)) {
+  # SELECT COLUMNS FOR CITY
+  cols_for_regression <- epsilon.t.master[,c(current_indx, (current_indx+ndays-1))]
+
+  # RUN MODEL
+  # model <- lm(cols_for_regression[,1] ~ cols_for_regression[,2:ndays])
+  model <- lm(cols_for_regression[,1] ~ cols_for_regression[,2])
+  # GET PVALUE
+  f <- summary(model)$fstatistic
+  p <- as.numeric(pf(f[1],f[2],f[3],lower.tail=F))
+  # ADD PVALUE AND MODEL TO MATRIX
+  pvalues_matrix[model_indx,'model'] <- paste(colnames(cols_for_regression)[1], '~', colnames(cols_for_regression)[2])
+  pvalues_matrix[model_indx,'pvalue'] <- p 
+  # INCREMENT INDEX
+  current_indx <- current_indx + ndays
+  model_indx <- model_indx + 1
+}
+
+head(pvalues_matrix)
+plot(pvalues_matrix[,'pvalue'])
+```
+
+## Neighbors correlation
+
+```{r, echo = FALSE}
+library(lattice)
+library(reshape2)
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+
+# Sanity check
+# head(events_by_date_city[,'Tulsa, OK'], n = 20)
+# head(data[data$city == 'Tulsa, OK',][,c('std_num_conflicts','datef')], n = 10)
+
+# Make date column rownames
+rownames(events_by_date_city) <- events_by_date_city$datef
+events_by_date_city <- events_by_date_city[,setdiff(colnames(events_by_date_city), 'datef')]
+
+X <- events_by_date_city
+
+### HELPER FUNCTIONS
+my.cov <- function(X) {
+  n <- nrow(X)
+  d <- data.frame(mean = colMeans(X))
+  means <- t(do.call("cbind", replicate(n, d, simplify = FALSE)))
+  diff_matrix <- as.matrix(X - means)
+  1/(n-1) * t(diff_matrix) %*% diff_matrix
+}
+my.cor <- function(X) {
+  cov.matrix <- my.cov(X)
+  # expect a square matrix
+  cor.matrix <- matrix(0, nrow = nrow(cov.matrix), ncol = nrow(cov.matrix))
+  for (i in 1:ncol(cov.matrix)) {
+    for (j in 1:nrow(cov.matrix)) {
+      cor.matrix[i,j] <- cov.matrix[i,j]/(sqrt(cov.matrix[i,i])*sqrt(cov.matrix[j,j]))
+    }
+  }
+  cor.matrix
+}
+
+X.cor <- my.cor(X)
+X.m <- melt(X.cor)
+
+library(corrplot)
+corrplot(X.cor, method = 'color', tl.cex = 0.01)
+```
+
+## Neighborhoods
+
+```{r, echo = FALSE}
+source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/data_expoloration/lasso.R')
+
+date_by_city_matrix <- data[,c('num_conflicts','datef','city')]
+events_by_date_city.v2 <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'num_conflicts', fun.aggregate = sum)
+
+# Make date column rownames
+rownames(events_by_date_city) <- events_by_date_city.v2$datef
+events_by_date_city.v2 <- events_by_date_city.v2[,setdiff(colnames(events_by_date_city.v2), 'datef')]
+
+model <- glm (`Long Beach, CA` ~ ., data = events_by_date_city.v2, family='poisson')
+summary(model)
+
+X <- events_by_date_city.v2
+# for every column of X, want to run lasso on all other columns
+# update coeff matrix, should be pxp
+lasso.coeffs <- matrix(0, ncol=ncol(X), nrow = ncol(X))
+rownames(lasso.coeffs) <- colnames(X)
+colnames(lasso.coeffs) <- colnames(X)
+for (i in 1:ncol(X)) {
+  city <- colnames(X)[i]
+  y <- as.numeric(X[,city])
+  Xmat <- as.matrix(X[,setdiff(1:ncol(X), i)])
+  model <- lm(y ~ Xmat)
+  coeffs <- lasso.reg(y, Xmat, 3000)
+  lasso.coeffs[city,setdiff(1:ncol(lasso.coeffs),i)] <- as.numeric(coeffs)
+}
+
+lasso.coeffs.select <- lasso.coeffs
+# Remove them if they don't like each other
+for (i in 1:ncol(lasso.coeffs)) {
+  for (j in 1:ncol(lasso.coeffs)) {
+    if ((lasso.coeffs[i,j] <= 0.02) || (lasso.coeffs[j,i] <= 0.02)) {
+      lasso.coeffs.select[i,j] = 0
+      lasso.coeffs.select[j,i] = 0
+    }
+  }
+}
+```
+
+
+```{r, echo = FALSE}
+#install.packages("igraph")
+
+## Load package
+library(igraph)
+s <- 1
+f <- 99
+(lasso.part <- lasso.coeffs.select[s:f,s:f])
+g <- graph.adjacency(lasso.part, weighted=T, mode = 'undirected')
+g <- simplify(g)
+V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
+V(g)$degree <- degree(g)
+V(g)$size <- (V(g)$degree)
+set.seed(3952)
+
+# interactive plot
+#tkplot(g)
+layout <- layout.fruchterman.reingold
+autocurve.edges(g)
+plot(g, layout=layout,
+     vertex.label.family = "Helvetica",
+     vertex.label.cex = 0.5,
+     vertex.color='darkslategray3')
+
+```
+
+```{r, echo=FALSE}
+library(ggmap)
+library(grid)
+
+# For every pair of non-zero coeffs
+# add city1.lat, city1.long 
+network <- data.frame(
+  'city.1.name' = character(),
+  'city.1.lat' = numeric(),
+  'city.1.long' = numeric(),
+  'city.2.name' = character(),
+  'city.2.lat' = numeric(),
+  'city.2.long' = numeric(),
+  stringsAsFactors=FALSE)
+
+cities <- data.frame(
+  'city.name' = character(),
+  'city.lat' = numeric(),
+  'city.long' = numeric(),
+  stringsAsFactors=FALSE)
+cities_idx <- 1
+
+for (i in 1:ncol(lasso.coeffs.select)) {
+  city <- colnames(lasso.coeffs.select)[i]
+  neighbors <- names(which(lasso.coeffs[,city] != 0, arr.ind = T))
+  city1.data <- data[data$city==city,][1,]
+  
+  if (!(city1 %in% cities$city.name)) {
+    cities[cities_idx,] <- c(city,
+      as.numeric(city1.data$latitude),
+      as.numeric(city1.data$longitude))
+    cities_idx <- cities_idx + 1
+  }
+  
+  for (idx in 1:length(neighbors)) {
+    city2 <- neighbors[idx]
+    city2.data <- data[data$city==city2,][1,]
+    new_row <- c(
+      city,
+      as.numeric(city1.data$latitude),
+      as.numeric(city1.data$longitude),
+      city2,
+      as.numeric(city2.data$latitude),
+      as.numeric(city2.data$longitude))
+    network[(i+idx),] <- new_row
+    
+    if (!(city2 %in% cities$city.name)) {
+      cities[cities_idx,] <- c(city2,
+        as.numeric(city2.data$latitude),
+        as.numeric(city2.data$longitude))
+      cities_idx <- cities_idx + 1
+    }
+  }
+}
+
+network <- network[2:nrow(network),]
+nrow(network)
+bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
+network <- subset(network, !(city.1.name %in% bad_cities))
+network <- subset(network, !(city.2.name %in% bad_cities))
+cities <- subset(cities, !(city.name %in% bad_cities))
+
+map <- NULL
+mapUS <- borders("state")
+map <- ggplot() + mapUS
+map <- map + 
+  geom_segment(aes(
+    y = as.numeric(network$city.1.lat),
+    x = as.numeric(network$city.1.long),
+    yend = as.numeric(network$city.2.lat),
+    xend = as.numeric(network$city.2.long)),
+    colour = 'steelblue2') +
+  geom_text(data = cities, 
+             aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', size = 3, vjust = .5, hjust = .8)
+map
 ```

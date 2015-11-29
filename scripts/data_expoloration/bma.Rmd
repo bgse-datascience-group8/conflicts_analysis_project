@@ -1,0 +1,100 @@
+---
+title: "Bayes Model Averaging"
+author: "Aimee Barciauskas"
+date: "November 28, 2015"
+output: html_document
+---
+
+```{r}
+library(RMySQL)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130331")
+data <- dbFetch(res, n = -1)
+
+# Standard data formatting
+data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
+data$city <- paste0(data$name, ', ', data$admin1_code)
+
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('date_mean','sqldate')
+day_sds <- tapply(data$num_conflicts, data$sqldate, FUN=sd)
+day_sds <- cbind(as.matrix(day_sds), as.numeric(row.names(day_sds)))
+colnames(day_sds) <- c('sd','sqldate')
+
+data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+
+# head(data[,c('sqldate','num_conflicts', 'sd', 'mean')], n = 100)
+
+data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$sd
+
+library(reshape2)
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+```
+
+```{r}
+# dk ~ binom(p, pie), pie = 0.5
+# each model size has the same probability
+# so for 2^98 models
+X <- events_by_date_city
+y <- X[,'Seattle, WA']
+colones <- rep(1, nrow(X))
+model.1 <- lm(y ~ 0 + colones)
+
+ssr1 <- sum((y - fitted.values(model.1))**2)
+
+x1 <- as.numeric(X[,'San Francisco, CA'])
+x2 <- as.numeric(X[,'Boston, MA'])
+model.2 <- lm(y ~ x1 + x2)
+summary(model.1)
+summary(model.2)
+ssr2 <- sum((y - fitted.values(model.2))**2)
+
+plot(y, type = 'l')
+lines(fitted.values(model.2), col='blue')
+lines(fitted.values(model.1), col='red')
+
+aq = 0.001
+bq = 0.001
+
+bayes.factor <- function(X, w, g, ssr1) {
+  n <- nrow(X)
+  dk <- length(w)
+
+  first_term <- (1+n*g)^(-dk/2)
+  second_term <- (1+n*g)*((1 + (t(w)%*%t(X)%*%X%*%w)/(bq+ssr1))^(-1))^(-(aq+n)/2)
+  
+  first_term*second_term
+}
+
+X2 <- cbind(rep(1, length(x1)), x1,x2)
+coeffs <- as.numeric(coefficients(model.2))
+
+bayes.factor(X2, coeffs, 0.1, ssr1)
+
+prob.mk <- function(n, k) {
+  choose(n, k)/(2^n)
+}
+prob.mk(5,2)
+
+# The probability of a model given t will be
+# p(M_{k}|t) = p(t|M_{k})*p(M_{K}) / sum(bayes_factor(M_{j})*p(M_{j}))
+# p(t|M_{k}) will be the quantile(?) of the normal for t with mean X_{k}*w_{k}, var q
+# Is this sd reasonble?
+p_t <- pnorm(y[1], mean = (X2%*%coeffs)[1], sd = sd(y))
+p_t*prob.mk(5,2)
+
+# Enumerate 2^n models and calculate ^^
+```
+
+If we consider an upper limit of models with 5 coefficients, a model with 2 coefficients has a prior probability of choose(5,2)/(2^5)
+
+p(Mk) <- 0.3125
+dk <- 2
+
