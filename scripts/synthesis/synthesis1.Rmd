@@ -42,7 +42,7 @@ plots <- list()
 for (idcs in 1:subset_size) {
   current_cities <- cities[unlist(subsets[idcs])]
   current_data <- subset(data, city %in% current_cities)
-  plot <- ggplot(data = current_data, aes(x = datef, y = num_conflicts, color = city)) + 
+  plot <- ggplot(data = current_data, aes(x = datef, y = log(num_conflicts), color = city)) + 
     geom_smooth(method="loess", se=FALSE) + 
     theme(legend.position = "none")
 
@@ -51,6 +51,8 @@ for (idcs in 1:subset_size) {
 
 multiplot(plotlist = plots, cols=2)
 ```
+
+Actually looks ok... may not need standardization
 
 ```{r, echo = FALSE}
 day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
@@ -67,7 +69,7 @@ data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
 data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
 ```
 
-After
+After standardization...
 
 ```{r, echo=FALSE}
 plots <- list()
@@ -184,25 +186,18 @@ my.ssm <- function(y,X) {
   sum((fitted.values - mean(y))**2)
 }
 
-y <- epsilon.t.master[,1]
-X <- epsilon.t.master[,2:14]
-p <- ncol(X)
-n <- length(y)
-model <- lm(y ~ 0 + X)
-rss <- my.rss(y,X)
-# compare with: sum(residuals(model)**2)
-tss <- my.tss(y,X)
-ssm <- my.ssm(y,X)
-# (SSM/DFM) / (SSE/DFE)
-f.stat <- ((ssm)/(p))/(rss/(n - p))
-
-# R^2 = MSE/MST - 1
-# MSE = SSE/DFE = SSE/(n-p) and MST = SST/DFT = SST/(n-1)
-mse <- rss/(n-p)
-mst <- tss/(n-1)
-r.squared <- mse/mst - 1
-
-pvalue <- 1-pf(f.stat, df1=p, df2=n-p)
+my.pvalue <- function(y, X) {
+  p <- ncol(X)
+  n <- length(y)
+  rss <- my.rss(y,X)
+  # compare with: sum(residuals(model)**2)
+  ssm <- my.ssm(y,X)
+  
+  f.stat <- ((ssm)/(p))/(rss/(n - p))
+  pvalue <- 1-pf(f.stat, df1=p, df2=n-p)
+  
+  return(pvalue)
+}
 ```
 
 ## Collect p-values
@@ -213,8 +208,8 @@ pvalues_matrix <- matrix(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
 colnames(pvalues_matrix) <- c('model','pvalue')
 
 coeffs <- list()
-  current_indx <- 1
-  model_indx <- 1
+current_indx <- 1
+model_indx <- 1
 
 while (current_indx < ncol(epsilon.t.master)) {
   # SELECT COLUMNS FOR CITY
@@ -223,12 +218,11 @@ while (current_indx < ncol(epsilon.t.master)) {
 
   # get coefficients
   betas <- my.lm(cols_for_regression[,1], cols_for_regression[,2:ndays])
-  print(betas)
   # ADD PVALUE AND MODEL TO MATRIX
   pvalues_matrix[model_indx,'model'] <- paste(colnames(cols_for_regression)[1], '~', paste(colnames(cols_for_regression)[2:ndays], collapse = ' + '))
   pvalues_matrix[model_indx,'pvalue'] <- my.pvalue(cols_for_regression[,1], cols_for_regression[,2:ndays])
   
-  coeffs[colnames(cols_for_regression)[1]] = betas
+  coeffs[[colnames(cols_for_regression)[1]]] = betas
                           
   # INCREMENT INDEX
   current_indx <- current_indx + ndays
@@ -277,7 +271,6 @@ while (current_indx < ncol(epsilon.t.master)) {
   model_indx <- model_indx + 1
 }
 
-head(pvalues_matrix)
 plot(pvalues_matrix[,'pvalue'])
 ```
 
@@ -340,9 +333,6 @@ events_by_date_city.v2 <- dcast(data = date_by_city_matrix, formula = datef ~ ci
 rownames(events_by_date_city) <- events_by_date_city.v2$datef
 events_by_date_city.v2 <- events_by_date_city.v2[,setdiff(colnames(events_by_date_city.v2), 'datef')]
 
-model <- glm (`Long Beach, CA` ~ ., data = events_by_date_city.v2, family='poisson')
-summary(model)
-
 X <- events_by_date_city.v2
 # for every column of X, want to run lasso on all other columns
 # update coeff matrix, should be pxp
@@ -359,7 +349,7 @@ for (i in 1:ncol(X)) {
 }
 
 lasso.coeffs.select <- lasso.coeffs
-# Remove them if they don't like each other
+# Remove them if they don't like each other (e.g. negative or 0 correlation)
 for (i in 1:ncol(lasso.coeffs)) {
   for (j in 1:ncol(lasso.coeffs)) {
     if ((lasso.coeffs[i,j] <= 0.02) || (lasso.coeffs[j,i] <= 0.02)) {
@@ -427,7 +417,7 @@ for (i in 1:ncol(lasso.coeffs.select)) {
   neighbors <- names(which(lasso.coeffs[,city] != 0, arr.ind = T))
   city1.data <- data[data$city==city,][1,]
   
-  if (!(city1 %in% cities$city.name)) {
+  if (!(city %in% cities$city.name)) {
     cities[cities_idx,] <- c(city,
       as.numeric(city1.data$latitude),
       as.numeric(city1.data$longitude))
