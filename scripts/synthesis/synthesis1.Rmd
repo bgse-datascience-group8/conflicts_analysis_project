@@ -13,7 +13,7 @@ library(dplyr)
 
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
-res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130401")
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130701")
 data <- dbFetch(res, n = -1)
 
 # Standard data formatting
@@ -26,7 +26,31 @@ data <- subset(data, geonameid != '4140963')
 
 # Data standardization
 
-[ADD ME]: plots for before and after
+Before standardization...
+
+```{r, echo=FALSE}
+#install.packages('Rmisc')
+library(Rmisc)
+
+cities <- unique(data$city)
+subsets <- seq(1,length(cities),1)
+subset_size <- 6
+subsets <- split(subsets, ceiling(seq_along(subsets)/(length(cities)/subset_size)))
+
+plots <- list()
+
+for (idcs in 1:subset_size) {
+  current_cities <- cities[unlist(subsets[idcs])]
+  current_data <- subset(data, city %in% current_cities)
+  plot <- ggplot(data = current_data, aes(x = datef, y = num_conflicts, color = city)) + 
+    geom_smooth(method="loess", se=FALSE) + 
+    theme(legend.position = "none")
+
+  plots[[idcs]] <- plot
+}
+
+multiplot(plotlist = plots, cols=2)
+```
 
 ```{r, echo = FALSE}
 day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
@@ -43,24 +67,28 @@ data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
 data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
 ```
 
-# Data Summary
+After
 
-```{r, echo = FALSE}
-random_cities <- sample(unique(data$city), 21)
-random_sample <- subset(data, city %in% random_cities)
+```{r, echo=FALSE}
+plots <- list()
 
-ggplot(data = random_sample,
-       aes(x = datef, y = std_num_conflicts, color = city)) +       
-  geom_line(aes(group = city))
+for (idcs in 1:subset_size) {
+  current_cities <- cities[unlist(subsets[idcs])]
+  current_data <- subset(data, city %in% current_cities)
+  plot <- ggplot(data = current_data, aes(x = datef, y = std_num_conflicts, color = city)) + 
+    geom_smooth(method="loess", se=FALSE) + 
+    theme(legend.position = "none")
 
-ggplot(data = random_sample,
-       aes(x = datef, y = std_num_conflicts, color = city)) +       
-  stat_smooth(aes(group = city), method = 'lm')
+  plots[[idcs]] <- plot
+}
+
+multiplot(plotlist = plots, cols=2)
 ```
 
 ## Weekly trends
 
 ```{r, echo = FALSE}
+library(dplyr)
 #create a vector of weekdays
 weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
 
@@ -72,11 +100,10 @@ end_date <- as.Date('20151031', format = '%Y%m%d')
 
 fall2015 <- subset(data, datef > start_date & datef < end_date)
 
-fall2015 <- fall2015 %>% group_by(datef) %>% summarise(sum_num_conf = sum(num_conflicts))
-fall2015$wDay <- factor((weekdays(fall2015$date) %in% weekdays1), 
-         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,wday=fall2015$wDay), FUN=sum)
 
-ggplot(data = fall2015, aes(y = sum_num_conf, x = datef, fill=wDay)) + geom_bar(stat='identity') + scale_x_date(fall2015$datef) 
+# Notice halloween...
+ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='identity') + scale_fill_manual(values=c("#E69F00", "#56B4E9")) + xlab("Date") + ylab("Number of Conflicts") + ggtitle("Number of Conflicts by Day (Fall 2015)")
 ```
 
 ## Auto-correlation
@@ -87,7 +114,6 @@ date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
 
 # fun aggregate needed as some cells are not represented -> 0
 events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
-
 
 epsilon.t <- events_by_date_city
 rownames(epsilon.t) <- epsilon.t$datef
@@ -141,57 +167,42 @@ plot(least_sqrs_beta.residuals)
 ```{r, echo = FALSE}
 my.lm <- function(y, X) solve(t(X)%*%X) %*% t(X) %*% y
 
-# sample.mean <- mean(X)
-# sst <- sum((X-sample.mean)**2)
-# sst.df <- ncol(X)*nrow(X) - 1
-
-ssw <- function(X) {
-  means <- colMeans(X)
-  diffs <- c()
-  for (i in 1:ncol(X)) {
-    # for every item in col x
-    # sum squared differences
-    diffs <- append(diffs, (X[,i] - means[i])**2)
-  }
-  sum(diffs)
-}
-
-ssw.df <- function(X) {ncol(X)*(nrow(X) - 1)}
-
-ssb <- function(X) {
-  sample.mean <- mean(X)
-  means <- colMeans(X)
-  diffs <- c()
-  for (i in 1:length(means)) {
-    diffs <- append(diffs, sum(nrow(X)*((means[i] - sample.mean)**2)))
-  }
-  sum(diffs)
-}
-
-ssb.df <- function(X) {ncol(X) - 1}
-
-(f.stat <- (ssb(X)/ssb.df(X)) / (ssw(X)/ssw.df(X)))
-
 my.rss <- function(y, X) {
   beta.hat <- my.lm(y, X)
   fitted.values <- X%*%beta.hat
   sum((y - fitted.values)**2)
 }
 
-#f.stat.v1 <- function(X)((rss1 - rss2)/(m-1)) / (rss2/(length(y)-m+1)))
+my.tss <- function(y,X) {
+  m <- mean(y)
+  sum((y - m)**2)
+}
 
-# FIXME: Duplicate work with my.lm here
-# only works for beta.hat length = 1
-my.pvalue <- function(y, X) {
+my.ssm <- function(y,X) {
   beta.hat <- my.lm(y, X)
   fitted.values <- X%*%beta.hat
-  residuals <- y - fitted.values
-  var <- (t(residuals)%*%residuals)/(length(y)-1)
-  se <- sqrt(var)
-
-  wald.stat <- (beta.hat - 0)/se
-  1 - pt(abs(wald.stat), df = length(y)-1)
+  sum((fitted.values - mean(y))**2)
 }
+
+y <- epsilon.t.master[,1]
+X <- epsilon.t.master[,2:14]
+p <- ncol(X)
+n <- length(y)
+model <- lm(y ~ 0 + X)
+rss <- my.rss(y,X)
+# compare with: sum(residuals(model)**2)
+tss <- my.tss(y,X)
+ssm <- my.ssm(y,X)
+# (SSM/DFM) / (SSE/DFE)
+f.stat <- ((ssm)/(p))/(rss/(n - p))
+
+# R^2 = MSE/MST - 1
+# MSE = SSE/DFE = SSE/(n-p) and MST = SST/DFT = SST/(n-1)
+mse <- rss/(n-p)
+mst <- tss/(n-1)
+r.squared <- mse/mst - 1
+
+pvalue <- 1-pf(f.stat, df1=p, df2=n-p)
 ```
 
 ## Collect p-values
@@ -359,6 +370,7 @@ for (i in 1:ncol(lasso.coeffs)) {
 }
 ```
 
+[ADD ME: plot convergence]
 
 ```{r, echo = FALSE}
 #install.packages("igraph")
@@ -385,6 +397,8 @@ plot(g, layout=layout,
      vertex.color='darkslategray3')
 
 ```
+
+[ADD ME: Degree distribution]
 
 ```{r, echo=FALSE}
 library(ggmap)

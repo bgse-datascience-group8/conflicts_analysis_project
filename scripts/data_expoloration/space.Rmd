@@ -1,0 +1,89 @@
+---
+title: "SPACE"
+author: "Aimee Barciauskas"
+date: "November 28, 2015"
+output: html_document
+---
+
+# SPACE Analysis of Networks
+
+Data standardization
+
+```{r}
+library(RMySQL)
+library(reshape)
+library(ggplot2)
+library(dplyr)
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130401")
+data <- dbFetch(res, n = -1)
+
+# Standard data formatting
+data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
+data$city <- paste0(data$name, ', ', data$admin1_code)
+
+## Removing Washington, D.C. (for now)
+data <- subset(data, geonameid != '4140963')
+
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('date_mean','sqldate')
+
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+
+data$std_num_conflicts <- (data$num_conflicts - data$date_mean)
+```
+
+Melt data into ncities x ncities
+
+```{r}
+library(reshape2)
+date_by_city_matrix <- data[,c('num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'num_conflicts', fun.aggregate = sum)
+
+# Sanity check
+# head(events_by_date_city[,'Tulsa, OK'], n = 20)
+# head(data[data$city == 'Tulsa, OK',][,c('std_num_conflicts','datef')], n = 10)
+
+# Make date column rownames
+rownames(events_by_date_city) <- events_by_date_city$datef
+events_by_date_city <- events_by_date_city[,setdiff(colnames(events_by_date_city), 'datef')]
+
+X <- events_by_date_city
+```
+
+### SPACE Algorithm
+
+1) Estimate K -> the concentration matrix, K[i,j] is the concentration for the ith and jth pair
+2) Given an estimate k.hat[i,i], minimize (the error for the ith group + penalty)
+   The estimate is sum( (rhos[,!i]) * sqrt(k.hat[j,j]/k.hat[i,i]) y[,!i])
+   The penalty is lambda * sum(rhos)
+3) Given 2's estimate of rho[i,j] estimate k[i,i] as residual variance
+4) Check for convergence
+5) Estimate the nondiagonal entries of K as K[i,j] = -rho[i,j] * sqrt(K[i,i] * K[j,j])
+
+```{r}
+my.lm <- function(y, X) solve(t(X)%*%X) %*% t(X) %*% y
+
+library(MASS)
+K <- solve(cov(X))
+
+i <- 1
+yit <- X[,i]
+yjt <- as.matrix(X[,setdiff(1:ncol(X), i)])
+
+model <- my.lm(yit, yjt)
+(initial.betas <- model)
+
+for (j in 2:n)
+j <- 2
+k.jj <- K[j,j]
+k.ii <- K[i,i]
+beta.j <- initial.betas[j-1]
+rho.j <- sqrt(k.ii*k.jj)/beta.j
+```
+
