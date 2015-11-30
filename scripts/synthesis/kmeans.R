@@ -44,33 +44,3 @@ k.means <- function(X, k) {
 
   list(mus=mus, r.nks=r.nks)
 }
-
-cities <- data[,c('city','latitude','longitude')]
-cities <- unique(cities)
-
-bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
-cities <- subset(cities, !(city %in% bad_cities))
-
-X <- as.matrix(cities[,c('latitude','longitude')])
-
-nclusters <- 5
-res <- k.means(X, nclusters)
-r.nks <- res$r.nks
-colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
-cities <- cbind(cities, r.nks)
-
-regions <- factor(apply(cities, 1, function(x) which(x == 1)), 
-                    labels = colnames(cities)[4:8]) 
-
-cities <- cbind(cities, regions)
-
-library(ggmap)
-
-
-map <- NULL
-mapUS <- borders("state")
-map <- ggplot() + mapUS
-map <- map + 
-  geom_text(data = cities, 
-             aes(x = longitude, y = latitude, label = city, colour = regions), size = 3, vjust = .5, hjust = .8)
-map

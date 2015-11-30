@@ -2,10 +2,10 @@
 title: "Synthesis pt1"
 author: "Aimee Barciauskas"
 date: "November 28, 2015"
-output: html_document
+output: pdf_document
 ---
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 library(RMySQL)
 library(reshape)
 library(ggplot2)
@@ -13,6 +13,21 @@ library(dplyr)
 
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
+# MySQL [gdelt]> select sum(num_conflicts) from city_day_event_counts_plus;
+# +--------------------+
+# | sum(num_conflicts) |
+# +--------------------+
+# |            1510380 |
+# +--------------------+
+# 1 row in set (0.08 sec)
+# 
+# MySQL [gdelt]> select sum(num_conflicts) from top_cities;
+# +--------------------+
+# | sum(num_conflicts) |
+# +--------------------+
+# |            1235960 |
+# +--------------------+
+# 1 row in set (0.03 sec)
 res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130701")
 data <- dbFetch(res, n = -1)
 
@@ -28,33 +43,38 @@ data <- subset(data, geonameid != '4140963')
 
 Before standardization...
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 #install.packages('Rmisc')
 library(Rmisc)
 
-cities <- unique(data$city)
-subsets <- seq(1,length(cities),1)
-subset_size <- 6
-subsets <- split(subsets, ceiling(seq_along(subsets)/(length(cities)/subset_size)))
+plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_line() +
+  theme(legend.position = "none")
 
-plots <- list()
+plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_line() +
+  theme(legend.position = "none")
 
-for (idcs in 1:subset_size) {
-  current_cities <- cities[unlist(subsets[idcs])]
-  current_data <- subset(data, city %in% current_cities)
-  plot <- ggplot(data = current_data, aes(x = datef, y = log(num_conflicts), color = city)) + 
-    geom_smooth(method="loess", se=FALSE) + 
-    theme(legend.position = "none")
-
-  plots[[idcs]] <- plot
-}
-
-multiplot(plotlist = plots, cols=2)
+multiplot(plot1, plot2, cols=1)
 ```
+
+It's very noisy so we simplify the charts...
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',99)) +
+  theme(legend.position = "none")
+
+plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',99)) +
+  theme(legend.position = "none")
+
+multiplot(plot1, plot2, cols=1)
+```
+
+[ADD ME]: Correlation between time and mean of data
 
 Actually looks ok... may not need standardization
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
 day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
 colnames(day_means) <- c('date_mean','sqldate')
@@ -71,25 +91,16 @@ data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
 
 After standardization...
 
-```{r, echo=FALSE}
-plots <- list()
-
-for (idcs in 1:subset_size) {
-  current_cities <- cities[unlist(subsets[idcs])]
-  current_data <- subset(data, city %in% current_cities)
-  plot <- ggplot(data = current_data, aes(x = datef, y = std_num_conflicts, color = city)) + 
-    geom_smooth(method="loess", se=FALSE) + 
-    theme(legend.position = "none")
-
-  plots[[idcs]] <- plot
-}
-
-multiplot(plotlist = plots, cols=2)
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+plot <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',99)) +
+  theme(legend.position = "none")
+plot
 ```
 
 ## Weekly trends
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 library(dplyr)
 #create a vector of weekdays
 weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
@@ -108,9 +119,9 @@ fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,w
 ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='identity') + scale_fill_manual(values=c("#E69F00", "#56B4E9")) + xlab("Date") + ylab("Number of Conflicts") + ggtitle("Number of Conflicts by Day (Fall 2015)")
 ```
 
-## Auto-correlation
+# Auto-correlation
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 library(reshape2)
 date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
 
@@ -140,9 +151,9 @@ for (idx in 1:length(cities)) {
 epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
 ```
 
-For a single city: Boston
+## Example: Auto-correlation for a single city: Boston
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 boston <- epsilon.t.master[,c('Boston, MA.day0','Boston, MA.day1')]
 least_sqrs_beta <- solve(t(boston[,2])%*%boston[,2]) %*% t(boston[,2]) %*% boston[,1]
 # Compare with: model <- lm(boston[,1] ~ 0 + boston[,2])
@@ -160,13 +171,15 @@ wald.pvalue <- function(wald.stat, df) {
 }
 wald.pvalue(wald.stat, nrow(boston)-1)
 
-plot(least_sqrs_beta.fitted, boston[,1])
-plot(least_sqrs_beta.residuals)
+plot(least_sqrs_beta.fitted, boston[,1], pch = 19, main = 'Fitted vs. Actual Values for 1-day lag in Boston', xlab = 'Fitted Value', ylab = 'Actual Value')
+plot(least_sqrs_beta.residuals, pch = 19, main = 'Boston: 1-day Lag Model Residuals')
 ```
 
+
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 # Helper functions
 
-```{r, echo = FALSE}
 my.lm <- function(y, X) solve(t(X)%*%X) %*% t(X) %*% y
 
 my.rss <- function(y, X) {
@@ -190,20 +203,21 @@ my.pvalue <- function(y, X) {
   p <- ncol(X)
   n <- length(y)
   rss <- my.rss(y,X)
-  # compare with: sum(residuals(model)**2)
+  # compare with: 
+  # model<-lm(y ~ 0 + X)
+  # sum(residuals(model)**2)
   ssm <- my.ssm(y,X)
   
-  f.stat <- ((ssm)/(p))/(rss/(n - p))
+  f.stat <- ((ssm-rss)/p)/(rss/(n - p))
   pvalue <- 1-pf(f.stat, df1=p, df2=n-p)
   
   return(pvalue)
 }
 ```
 
-## Collect p-values
 
-
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+# Evaluate auto-correlation by lagging n-days (unused)
 pvalues_matrix <- matrix(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
 colnames(pvalues_matrix) <- c('model','pvalue')
 
@@ -231,52 +245,73 @@ while (current_indx < ncol(epsilon.t.master)) {
 
 ```
 
-For a specific lag
+Evaluate auto-correlation by the nth-day lagged.
 
-```{r, echo = FALSE}
+14 days selected for best effect-dropoff.
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+# 21 days selected for best effect-dropoff
 ndays <- 14
-epsilon.t.master = matrix(nrow = total_days-ndays+1)
+# coeffs matrix is ndays x ncities so we can plot the average coeff for each nday regression
+coeffs <- matrix(nrow = ndays, ncol =length(unique(data$city)))
+pvalues_matrix <- matrix(nrow = ndays, ncol =length(unique(data$city)))
 
-for (idx in 1:length(cities)) {
-  city <- cities[idx]
-  epsilon.t.city <- embed(c(rep(NA, ndays-1),epsilon.t[,city]), ndays)
-  colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(ndays-1)))
-  colnames(epsilon.t.city) <- colnames # Not that it matters
-  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+# Reconstruct epsilon.t.master for the specific lag
+for (i in 2:ndays) {
+  nday <- i
+  epsilon.t.master = matrix(nrow = total_days-nday+1)
+  
+  for (idx in 1:length(cities)) {
+    city <- cities[idx]
+    epsilon.t.city <- embed(c(rep(NA, nday-1),epsilon.t[,city]), nday)
+    colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(nday-1)))
+    colnames(epsilon.t.city) <- colnames # Not that it matters
+    epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[nday:nrow(epsilon.t.city),])
+  }
+  
+  epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+  
+  current_indx <- 1
+  model_indx <- 1
+  
+  while (current_indx < ncol(epsilon.t.master)) {
+    # SELECT COLUMNS FOR CITY
+    cols_for_regression <- epsilon.t.master[,c(current_indx, (current_indx+nday-1))]
+  
+    # RUN MODEL
+    beta <- my.lm(cols_for_regression[,1], cols_for_regression[,2])
+    # GET PVALUE
+  
+    # ADD PVALUE AND COEFFS TO MATRIX
+    pvalues_matrix[nday,model_indx] <- my.pvalue(cols_for_regression[,1], as.matrix(cols_for_regression[,2]))
+    coeffs[nday,model_indx] = beta
+                            
+    # INCREMENT INDEX
+    current_indx <- current_indx + nday
+    model_indx <- model_indx + 1
+  }
 }
+coeffs <- coeffs[2:nrow(coeffs),]
+pvalues <- pvalues_matrix[2:nrow(coeffs),]
+lag_mean_eff <- rowMeans(coeffs)
+pvalue_mean_val <- rowMeans(pvalues)
 
-epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+library(scales)
 
-pvalues_matrix <- data.frame(ncol = 2, nrow = ncol(epsilon.t.master)/ndays)
-colnames(pvalues_matrix) <- c('model','pvalue')
+par(mfrow=c(2,1))
 
-current_indx <- 1
-model_indx <- 1
+matplot(coeffs, type='l', xlab = "nth-Day Lag", ylab = 'Coefficient', main = 'Auto correlation: effect by day')
 
-while (current_indx < ncol(epsilon.t.master)) {
-  # SELECT COLUMNS FOR CITY
-  cols_for_regression <- epsilon.t.master[,c(current_indx, (current_indx+ndays-1))]
+matplot(lag_mean_eff, type='l', xlab = "nth-Day Lag", ylab = 'Average Coefficient', main = 'Auto correlation: Mean effect by day', ylim = c(0.25,0.75))
 
-  # RUN MODEL
-  # model <- lm(cols_for_regression[,1] ~ cols_for_regression[,2:ndays])
-  model <- lm(cols_for_regression[,1] ~ cols_for_regression[,2])
-  # GET PVALUE
-  f <- summary(model)$fstatistic
-  p <- as.numeric(pf(f[1],f[2],f[3],lower.tail=F))
-  # ADD PVALUE AND MODEL TO MATRIX
-  pvalues_matrix[model_indx,'model'] <- paste(colnames(cols_for_regression)[1], '~', colnames(cols_for_regression)[2])
-  pvalues_matrix[model_indx,'pvalue'] <- p 
-  # INCREMENT INDEX
-  current_indx <- current_indx + ndays
-  model_indx <- model_indx + 1
-}
-
-plot(pvalues_matrix[,'pvalue'])
+par(mfrow=c(1,1))
+# FIXME: p-values are broken
+#matplot(pvalue_mean_val, type = 'l', main = 'Mean p-values', xlab = 'nth-Day Lag', ylab = 'Average p-value')
 ```
 
 ## Neighbors correlation
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 library(lattice)
 library(reshape2)
 date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
@@ -323,7 +358,7 @@ corrplot(X.cor, method = 'color', tl.cex = 0.01)
 
 ## Neighborhoods
 
-```{r, echo = FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/data_expoloration/lasso.R')
 
 date_by_city_matrix <- data[,c('num_conflicts','datef','city')]
@@ -344,7 +379,7 @@ for (i in 1:ncol(X)) {
   y <- as.numeric(X[,city])
   Xmat <- as.matrix(X[,setdiff(1:ncol(X), i)])
   model <- lm(y ~ Xmat)
-  coeffs <- lasso.reg(y, Xmat, 3000)
+  coeffs <- lasso.reg(y, Xmat, 5000)
   lasso.coeffs[city,setdiff(1:ncol(lasso.coeffs),i)] <- as.numeric(coeffs)
 }
 
@@ -362,14 +397,16 @@ for (i in 1:ncol(lasso.coeffs)) {
 
 [ADD ME: plot convergence]
 
-```{r, echo = FALSE}
+[FIXME: Graph is too close together]
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 #install.packages("igraph")
 
 ## Load package
 library(igraph)
 s <- 1
 f <- 99
-(lasso.part <- lasso.coeffs.select[s:f,s:f])
+lasso.part <- lasso.coeffs.select[s:f,s:f]
 g <- graph.adjacency(lasso.part, weighted=T, mode = 'undirected')
 g <- simplify(g)
 V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
@@ -379,6 +416,7 @@ set.seed(3952)
 
 # interactive plot
 #tkplot(g)
+# FIXME: Too clustered together
 layout <- layout.fruchterman.reingold
 autocurve.edges(g)
 plot(g, layout=layout,
@@ -386,11 +424,12 @@ plot(g, layout=layout,
      vertex.label.cex = 0.5,
      vertex.color='darkslategray3')
 
+hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
 ```
 
 [ADD ME: Degree distribution]
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 library(ggmap)
 library(grid)
 
@@ -465,4 +504,87 @@ map <- map +
   geom_text(data = cities, 
              aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', size = 3, vjust = .5, hjust = .8)
 map
+```
+
+[ADD ME: Calculate statistical significance of lasso.coeffs.select]
+
+## Compare with SPACE results
+
+```{r, echo = FALSE, warnings = FALSE, messages = FALSE}
+library(space)
+
+results <- space.joint(as.matrix(events_by_date_city),lam1=100)
+P.hat   <- results$ParCor
+N <- ncol(X)
+A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
+dimnames(A.hat) <- list(colnames(X), colnames(X))
+g <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
+g <- simplify(g)
+V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
+V(g)$degree <- degree(g)
+V(g)$size <- (V(g)$degree)
+set.seed(3952)
+
+# interactive plot
+#tkplot(g)
+layout <- layout.fruchterman.reingold
+autocurve.edges(g)
+plot(g, layout=layout,
+     vertex.label.family = "Helvetica",
+     vertex.label.cex = 0.5,
+     vertex.color='darkslategray3')
+
+hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
+```
+
+### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
+
+[ADD ME: Some summary of results]
+[FIX ME: Regress on each region, so each region's effect is differentiated]
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+
+# get the regions using k-means
+cities <- data[,c('city','latitude','longitude')]
+cities <- unique(cities)
+
+bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
+cities <- subset(cities, !(city %in% bad_cities))
+
+X <- as.matrix(cities[,c('latitude','longitude')])
+
+source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeans.R')
+nclusters <- 6
+res <- k.means(X, nclusters)
+r.nks <- res$r.nks
+colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
+cities <- cbind(cities, r.nks)
+
+regions <- factor(apply(cities, 1, function(x) which(x == 1)), 
+                    labels = colnames(cities)[4:9]) 
+
+cities <- cbind(cities, regions)
+
+library(ggmap)
+
+map <- NULL
+mapUS <- borders("state")
+map <- ggplot() + mapUS
+map <- map + 
+  geom_text(data = cities, 
+             aes(x = longitude, y = latitude, label = city, colour = regions), size = 3, vjust = .5, hjust = .8)
+map
+
+# for every city, calculate avg same_region and avg_other_regions
+# doing counts so using glm - poisson
+for (i in 1:nrow(cities)) {
+  city <- cities[i,]
+  region <- city$regions
+  same_region_cities <- setdiff(cities[cities$regions == region,]$city, city$city)
+  day_avgs_same_region <- rowMeans(events_by_date_city.v2[,same_region_cities])
+  day_avgs_diff_regions <- rowMeans(events_by_date_city.v2[,setdiff(colnames(events_by_date_city), c(same_region_cities,city$city))])
+  
+  model <- glm(events_by_date_city.v2[,city$city] ~ day_avgs_same_region + day_avgs_diff_regions, family='poisson')
+  summary(model)
+}
 ```
