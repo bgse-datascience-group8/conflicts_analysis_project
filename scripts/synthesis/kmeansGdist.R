@@ -1,3 +1,4 @@
+library(Imap)
 # K-means clustering
 # 1) choose initial values for mu_{k}
 #    Given k = 4 and data has 2 vars

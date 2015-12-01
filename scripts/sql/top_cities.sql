@@ -41,3 +41,21 @@ create table top_cities as
   from top_100_cities top
   left join city_day_event_counts_plus c
   on top.geonameid = c.geonameid;
+
+
+-- MySQL [gdelt]> select sum(num_conflicts) as total_conflicts from top_cities group by geonameid order by total_conflicts desc limit 10;
+-- +-----------------+
+-- | total_conflicts |
+-- +-----------------+
+-- |          420260 |
+-- |           67335 |
+-- |           47731 |
+-- |           40192 |
+-- |           37795 |
+-- |           37781 |
+-- |           36596 |
+-- |           34510 |
+-- |           30407 |
+-- |           24606 |
+-- +-----------------+
+-- 10 rows in set (0.52 sec)

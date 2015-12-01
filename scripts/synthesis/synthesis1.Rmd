@@ -22,6 +22,11 @@ library(RMySQL)
 library(reshape)
 library(ggplot2)
 library(dplyr)
+library(RColorBrewer)
+
+images_dir <- '~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/conflict_analysis_app/public/images/'
+rcolors <- brewer.pal(11, 'Spectral')
+source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/helpers.R')
 
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
@@ -42,26 +47,34 @@ Before standardization...
 library(Rmisc)
 
 plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_line() +
-  theme(legend.position = "none")
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
 
 plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_line() +
-  theme(legend.position = "none")
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
 
+png(paste0(images_dir,'summary_num_conflicts_raw.png'), bg = "transparent", width=1200, height=1200, units='px')
 multiplot(plot1, plot2, cols=1)
+dev.off()
 ```
 
 It's very noisy so we simplify the charts...
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
-  scale_colour_manual(values=rep('#56B4E9',99)) +
+  scale_colour_manual(values=rep('#56B4E9',100)) +
   theme(legend.position = "none")
 
 plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_smooth(method="loess", se=FALSE) + 
-  scale_colour_manual(values=rep('#56B4E9',99)) +
+  scale_colour_manual(values=rep('#56B4E9',100)) +
   theme(legend.position = "none")
 
+png(paste0(images_dir,'summary_num_conflicts_smooth.png'), bg = "transparent", width=1200, height=1200, units='px')
 multiplot(plot1, plot2, cols=1)
+dev.off()
 ```
 
 [ADD ME]: Correlation between time and mean of data
@@ -87,9 +100,12 @@ After standardization...
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 plot <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
-  scale_colour_manual(values=rep('#56B4E9',99)) +
+  scale_colour_manual(values=rep('#56B4E9',100)) +
   theme(legend.position = "none")
+
+png(paste0(images_dir,'summary_std_num_conflicts.png'), bg = "transparent", width=1200, height=1200, units='px')
 plot
+dev.off()
 ```
 
 But adding a log(num_conflicts) column given data looks mostly stationary.
@@ -115,7 +131,11 @@ fall2015 <- subset(data, datef > start_date & datef < end_date)
 
 fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,wday=fall2015$wday), FUN=sum)
 
-ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='identity') + scale_fill_manual(values=c("#E69F00", "#56B4E9")) + xlab("Date") + ylab("Number of Conflicts") + ggtitle("Number of Conflicts by Day (Fall 2015)")
+plot <- ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='identity') + scale_fill_manual(values=c("#E69F00", "#56B4E9")) + xlab("Date") + ylab("Number of Conflicts") + ggtitle("Number of Conflicts by Day (Fall 2015)")
+
+png(paste0(images_dir,'summary_weekly_trends.png'), bg = "transparent", width=1200, height=1200, units='px')
+plot
+dev.off()
 ```
 
 # Auto-correlation
@@ -154,64 +174,31 @@ epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 boston <- epsilon.t.master[,c('Boston, MA.day0','Boston, MA.day1')]
-least_sqrs_beta <- solve(t(boston[,2])%*%boston[,2]) %*% t(boston[,2]) %*% boston[,1]
-# Compare with: model <- lm(boston[,1] ~ 0 + boston[,2])
-least_sqrs_beta.fitted <- boston[,2] %*% least_sqrs_beta
+y <- boston[,1]
+X <- cbind(rep(1, nrow(boston)), boston[,2])
+least_sqrs_beta <- my.lm(y,X)
+# Compare with: model <- lm(y ~ 0+X)
+least_sqrs_beta.fitted <- X %*% least_sqrs_beta
 # Compare least_sqrs_beta.fitted with fitted.values(model)
 
-least_sqrs_beta.residuals <- boston[,1] - least_sqrs_beta.fitted
-least_sqrs_beta.var <- (t(least_sqrs_beta.residuals)%*%least_sqrs_beta.residuals)/(nrow(boston)-1)
-least_sqrs_beta.se <- sqrt(least_sqrs_beta.var * solve(t(boston[,2]) %*% boston[,2]))
+least_sqrs_beta.residuals <- y - least_sqrs_beta.fitted
 
-# Wald
-wald.stat <- (least_sqrs_beta - 0)/(least_sqrs_beta.se)
-wald.pvalue <- function(wald.stat, df) {
-  1 - pt(abs(wald.stat), df = df)
-}
-wald.pvalue(wald.stat, nrow(boston)-1)
+boston.df <- data.frame(boston[,1], least_sqrs_beta.fitted, least_sqrs_beta.residuals)
+colnames(boston.df) <- c('actual','fitted','residuals')
 
-plot(least_sqrs_beta.fitted, boston[,1], pch = 19, main = 'Fitted vs. Actual Values for 1-day lag in Boston', xlab = 'Fitted Value', ylab = 'Actual Value')
-plot(least_sqrs_beta.residuals, pch = 19, main = 'Boston: 1-day Lag Model Residuals', ylab='Residuals', xlab='', xaxt='n')
-```
+plot <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, MA.day0`)) + geom_point(colour=rcolors[sample(1:11, 1)]) + geom_abline(aes(intercept = 0, slope = least_sqrs_beta), colour=rcolors[sample(1:11, 1)])
 
+png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=1200, height=1200, units='px')
+plot
+dev.off()
 
+p1 <- ggplot(boston.df, aes(x=actual, y=fitted)) + geom_point(colour=rcolors[sample(1:11, 1)])
 
-```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
-# Helper functions
+p2 <- ggplot(boston.df, aes(x=actual, y=residuals)) + geom_point(colour=rcolors[sample(1:11, 1)])
 
-my.lm <- function(y, X) solve(t(X)%*%X) %*% t(X) %*% y
-
-my.rss <- function(y, X) {
-  beta.hat <- my.lm(y, X)
-  fitted.values <- X%*%beta.hat
-  sum((y - fitted.values)**2)
-}
-
-my.tss <- function(y,X) {
-  m <- mean(y)
-  sum((y - m)**2)
-}
-
-my.ssm <- function(y,X) {
-  beta.hat <- my.lm(y, X)
-  fitted.values <- X%*%beta.hat
-  sum((fitted.values - mean(y))**2)
-}
-
-my.pvalue <- function(y, X) {
-  p <- ncol(X)
-  n <- length(y)
-  rss <- my.rss(y,X)
-  # compare with: 
-  # model<-lm(y ~ 0 + X)
-  # sum(residuals(model)**2)
-  ssm <- my.ssm(y,X)
-  
-  f.stat <- ((ssm-rss)/p)/(rss/(n - p))
-  pvalue <- 1-pf(f.stat, df1=p, df2=n-p)
-  
-  return(pvalue)
-}
+png(paste0(images_dir,'analysis_boston_ex2.png'), bg = "transparent", width=1200, height=1200, units='px')
+multiplot(p1, p2, cols=2)
+dev.off()
 ```
 
 
@@ -251,7 +238,10 @@ Evaluate auto-correlation by the nth-day lagged.
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 ndays <- 12
 # coeffs matrix is ndays x ncities so we can plot the average coeff for each nday regression
-coeffs <- matrix(nrow = ndays, ncol =length(unique(data$city)))
+coeffs <- matrix(nrow = ndays+1, ncol =length(unique(data$city)))
+rownames(coeffs) <- 0:ndays
+colnames(coeffs) <- cities
+
 pvalues_matrix <- matrix(nrow = ndays, ncol =length(unique(data$city)))
 
 # Reconstruct epsilon.t.master for the specific lag
@@ -289,18 +279,25 @@ for (i in 2:ndays) {
     model_indx <- model_indx + 1
   }
 }
-coeffs <- coeffs[2:nrow(coeffs),]
+
+coeffs <- coeffs[2:(nrow(coeffs)-1),]
 pvalues <- pvalues_matrix[2:nrow(coeffs),]
 lag_mean_eff <- rowMeans(coeffs)
 pvalue_mean_val <- rowMeans(pvalues)
 
-library(scales)
+dat.m <- melt(coeffs, id.vars = "value")
+plot <- ggplot(dat.m, aes(X1, value, color=factor(X2))) + geom_line(aes(group=X2)) + theme(legend.position='none')
 
-matplot(coeffs, type='l', xlab = "nth-Day Lag", ylab = 'Coefficient', main = 'Auto correlation: Effect by day and city', ylim = c(0,1.2))
+png(paste0(images_dir,'analysis_lag_coeffs.png'), bg = "transparent", width=1200, height=1200, units='px')
+plot
+dev.off()
 
-matplot(lag_mean_eff, type='l', xlab = "nth-Day Lag", ylab = 'Average Coefficient', main = 'Auto correlation: Average effect by day', ylim = c(0.5,0.75))
+dat.m <- melt(coeffs, id.vars = "group")
+plot <- ggplot(dat.m, aes(factor(X1), value)) + geom_boxplot()
 
-
+png(paste0(images_dir,'analysis_lag_boxplot.png'), bg = "transparent", width=1200, height=1200, units='px')
+plot
+dev.off()
 # FIXME: p-values are broken
 #matplot(pvalue_mean_val, type = 'l', main = 'Mean p-values', xlab = 'nth-Day Lag', ylab = 'Average p-value')
 ```
@@ -347,7 +344,11 @@ my.cor <- function(X) {
 
 X.cor <- my.cor(X)
 X.m <- melt(X.cor)
-heatmap(X.cor, scale="column", labRow=colnames(X), labCol=colnames(X),col = rev(heat.colors(256)))
+
+
+png(paste0(images_dir,'analysis_network_heatmap.png'), bg = "transparent", width=1200, height=1200, units='px')
+heatmap(X.cor, Rowv=NA, Colv=NA, scale="column", labRow=colnames(X), labCol=colnames(X),col = rev(heat.colors(256)))
+dev.off()
 ```
 
 ## Neighborhoods
@@ -405,12 +406,17 @@ V(g)$size <- (V(g)$degree)
 # FIXME: Too clustered together
 layout <- layout.fruchterman.reingold
 autocurve.edges(g)
+
+png(paste0(images_dir,'analysis_network_basic_lasso.png'), bg = "transparent", width=1200, height=1200, units='px')
 plot(g, layout=layout,
      vertex.label.family = "Helvetica",
-     vertex.label.cex = 0.5,
+     vertex.label.cex = 1.25,
      vertex.color='darkslategray3')
+dev.off()
 
+png(paste0(images_dir,'analysis_network_basic_lasso_hist.png'), bg = "transparent", width=1200, height=1200, units='px')
 hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
+dev.off()
 ```
 
 [ADD ME: Degree distribution]
@@ -472,10 +478,6 @@ for (i in 1:ncol(lasso.coeffs.select)) {
 
 network <- network[2:nrow(network),]
 nrow(network)
-bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
-network <- subset(network, !(city.1.name %in% bad_cities))
-network <- subset(network, !(city.2.name %in% bad_cities))
-cities <- subset(cities, !(city.name %in% bad_cities))
 
 map <- NULL
 mapUS <- borders("state")
@@ -489,7 +491,10 @@ map <- map +
     colour = 'steelblue2') +
   geom_text(data = cities, 
              aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', size = 3, vjust = .5, hjust = .8)
+
+png(paste0(images_dir,'analysis_network_basic_lasso_map.png'), bg = "transparent", width=1200, height=1200, units='px')
 map
+dev.off()
 ```
 
 [ADD ME: Calculate statistical significance of lasso.coeffs.select]
@@ -499,7 +504,7 @@ map
 ```{r, echo = FALSE, warnings = FALSE, messages = FALSE}
 library(space)
 
-results <- space.joint(as.matrix(events_by_date_city),lam1=300)
+results <- space.joint(as.matrix(events_by_date_city),lam1=200)
 P.hat   <- results$ParCor
 N <- ncol(X)
 A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
@@ -508,17 +513,22 @@ g <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
 g <- simplify(g)
 V(g)$label <- colnames(events_by_date_city[s:f,s:f])
 V(g)$degree <- degree(g)
-V(g)$size <- (V(g)$degree)
-hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
+V(g)$size <- V(g)$degree
 
 # interactive plot
 #tkplot(g)
 layout <- layout.fruchterman.reingold
-autocurve.edges(g)
-plot(g, layout=layout,
+
+png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=1200, height=1200, units='px')
+plot(g, layout=layout.sphere,
      vertex.label.family = "Helvetica",
-     vertex.label.cex = 0.5,
+     vertex.label.cex = 1,
      vertex.color='darkslategray3')
+dev.off()
+
+png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=1200, height=1200, units='px')
+hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
+dev.off()
 ```
 
 ### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
@@ -557,8 +567,11 @@ mapUS <- borders("state")
 map <- ggplot() + mapUS
 map <- map + 
   geom_text(data = cities, 
-             aes(x = longitude, y = latitude, label = city, colour = regions), size = 3, vjust = .5, hjust = .8)
+             aes(x = longitude, y = latitude, label = city, colour = regions), size = 5, vjust = .5, hjust = .8)
+
+png(paste0(images_dir,'analysis_kluster_map.png'), bg = "transparent", width=1200, height=800, units='px')
 map
+dev.off()
 
 # Matrix of coefficients for region effects for each city
 # ncities x nregions + 1 (same region)
@@ -597,5 +610,7 @@ for (i in 1:nrow(cities)) {
   region_coeffs[city$city,'same_region'] = coeffs['same_region']
 }
 
-boxplot(region_coeffs, use.cols = TRUE)
+png(paste0(images_dir,'analysis_kluster_region_coeffs_boxplot.png'), bg = "transparent", width=1200, height=1200, units='px')
+boxplot(region_coeffs, use.cols = TRUE, ylim=c(-0.5,1.5))
+dev.off()
 ```
