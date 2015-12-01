@@ -14,6 +14,8 @@ k.means <- function(X, k) {
   mus <- matrix(0, nrow=k, ncol=nvars)
   for (i in 1:nvars) {
     vars <- X[,i]
+    # Problem: no one will join group k if the mus are set arbitrarily,
+    #  they will all join a group that makes the most sense for all values.
     mus[,i] <- unlist(quantile(vars, probs=setdiff(seq(0,1,1/(k+1)), c(0,1))))
   }
   mus.prev <- mus
@@ -31,7 +33,6 @@ k.means <- function(X, k) {
       r.nks[i,which.min(diffs)] <- 1
     }
 
-    #new_mus <- matrix(0, nrow=k, ncol=nvars)
     for (i in 1:ncol(r.nks)) {
       mus[i,] <- r.nks[,i]%*%as.matrix(X)/sum(r.nks[,i])
       # for every row in X, if assigned to the group

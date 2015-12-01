@@ -98,6 +98,12 @@ plot <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city))
 plot
 ```
 
+But adding a log(num_conflicts) column given data looks mostly stationary.
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+data$log_num_conflicts <- log(data$num_conflicts)
+```
+
 ## Weekly trends
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
@@ -105,7 +111,7 @@ library(dplyr)
 #create a vector of weekdays
 weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
 
-data$wDay <- factor((weekdays(data$datef) %in% weekdays1), 
+data$wday <- factor((weekdays(data$datef) %in% weekdays1), 
          levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
 
 start_date <- as.Date('20150901', format = '%Y%m%d')
@@ -113,9 +119,8 @@ end_date <- as.Date('20151031', format = '%Y%m%d')
 
 fall2015 <- subset(data, datef > start_date & datef < end_date)
 
-fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,wday=fall2015$wDay), FUN=sum)
+fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,wday=fall2015$wday), FUN=sum)
 
-# Notice halloween...
 ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='identity') + scale_fill_manual(values=c("#E69F00", "#56B4E9")) + xlab("Date") + ylab("Number of Conflicts") + ggtitle("Number of Conflicts by Day (Fall 2015)")
 ```
 
@@ -123,10 +128,10 @@ ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + geom_bar(stat='i
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 library(reshape2)
-date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+date_by_city_matrix <- data[,c('log_num_conflicts','datef','city')]
 
 # fun aggregate needed as some cells are not represented -> 0
-events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
 
 epsilon.t <- events_by_date_city
 rownames(epsilon.t) <- epsilon.t$datef
@@ -172,7 +177,7 @@ wald.pvalue <- function(wald.stat, df) {
 wald.pvalue(wald.stat, nrow(boston)-1)
 
 plot(least_sqrs_beta.fitted, boston[,1], pch = 19, main = 'Fitted vs. Actual Values for 1-day lag in Boston', xlab = 'Fitted Value', ylab = 'Actual Value')
-plot(least_sqrs_beta.residuals, pch = 19, main = 'Boston: 1-day Lag Model Residuals')
+plot(least_sqrs_beta.residuals, pch = 19, main = 'Boston: 1-day Lag Model Residuals', ylab='Residuals', xlab='', xaxt='n')
 ```
 
 
@@ -247,11 +252,10 @@ while (current_indx < ncol(epsilon.t.master)) {
 
 Evaluate auto-correlation by the nth-day lagged.
 
-14 days selected for best effect-dropoff.
+12 days selected for best effect-dropoff.
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
-# 21 days selected for best effect-dropoff
-ndays <- 14
+ndays <- 12
 # coeffs matrix is ndays x ncities so we can plot the average coeff for each nday regression
 coeffs <- matrix(nrow = ndays, ncol =length(unique(data$city)))
 pvalues_matrix <- matrix(nrow = ndays, ncol =length(unique(data$city)))
@@ -298,13 +302,11 @@ pvalue_mean_val <- rowMeans(pvalues)
 
 library(scales)
 
-par(mfrow=c(2,1))
+matplot(coeffs, type='l', xlab = "nth-Day Lag", ylab = 'Coefficient', main = 'Auto correlation: Effect by day and city', ylim = c(0,1.2))
 
-matplot(coeffs, type='l', xlab = "nth-Day Lag", ylab = 'Coefficient', main = 'Auto correlation: effect by day')
+matplot(lag_mean_eff, type='l', xlab = "nth-Day Lag", ylab = 'Average Coefficient', main = 'Auto correlation: Average effect by day', ylim = c(0.5,0.75))
 
-matplot(lag_mean_eff, type='l', xlab = "nth-Day Lag", ylab = 'Average Coefficient', main = 'Auto correlation: Mean effect by day', ylim = c(0.25,0.75))
 
-par(mfrow=c(1,1))
 # FIXME: p-values are broken
 #matplot(pvalue_mean_val, type = 'l', main = 'Mean p-values', xlab = 'nth-Day Lag', ylab = 'Average p-value')
 ```
@@ -314,10 +316,10 @@ par(mfrow=c(1,1))
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 library(lattice)
 library(reshape2)
-date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+date_by_city_matrix <- data[,c('log_num_conflicts','datef','city')]
 
 # fun aggregate needed as some cells are not represented -> 0
-events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
 
 # Sanity check
 # head(events_by_date_city[,'Tulsa, OK'], n = 20)
@@ -351,24 +353,14 @@ my.cor <- function(X) {
 
 X.cor <- my.cor(X)
 X.m <- melt(X.cor)
-
-library(corrplot)
-corrplot(X.cor, method = 'color', tl.cex = 0.01)
+heatmap(X.cor, scale="column", labRow=colnames(X), labCol=colnames(X),col = rev(heat.colors(256)))
 ```
 
 ## Neighborhoods
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/data_expoloration/lasso.R')
-
-date_by_city_matrix <- data[,c('num_conflicts','datef','city')]
-events_by_date_city.v2 <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'num_conflicts', fun.aggregate = sum)
-
-# Make date column rownames
-rownames(events_by_date_city) <- events_by_date_city.v2$datef
-events_by_date_city.v2 <- events_by_date_city.v2[,setdiff(colnames(events_by_date_city.v2), 'datef')]
-
-X <- events_by_date_city.v2
+X <- events_by_date_city
 # for every column of X, want to run lasso on all other columns
 # update coeff matrix, should be pxp
 lasso.coeffs <- matrix(0, ncol=ncol(X), nrow = ncol(X))
@@ -379,7 +371,8 @@ for (i in 1:ncol(X)) {
   y <- as.numeric(X[,city])
   Xmat <- as.matrix(X[,setdiff(1:ncol(X), i)])
   model <- lm(y ~ Xmat)
-  coeffs <- lasso.reg(y, Xmat, 5000)
+  # When using a z-score, this was up to 5000
+  coeffs <- lasso.reg(y, Xmat, 100)
   lasso.coeffs[city,setdiff(1:ncol(lasso.coeffs),i)] <- as.numeric(coeffs)
 }
 
@@ -412,7 +405,6 @@ g <- simplify(g)
 V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
 V(g)$degree <- degree(g)
 V(g)$size <- (V(g)$degree)
-set.seed(3952)
 
 # interactive plot
 #tkplot(g)
@@ -513,17 +505,17 @@ map
 ```{r, echo = FALSE, warnings = FALSE, messages = FALSE}
 library(space)
 
-results <- space.joint(as.matrix(events_by_date_city),lam1=100)
+results <- space.joint(as.matrix(events_by_date_city),lam1=300)
 P.hat   <- results$ParCor
 N <- ncol(X)
 A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
 dimnames(A.hat) <- list(colnames(X), colnames(X))
 g <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
 g <- simplify(g)
-V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
+V(g)$label <- colnames(events_by_date_city[s:f,s:f])
 V(g)$degree <- degree(g)
 V(g)$size <- (V(g)$degree)
-set.seed(3952)
+hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
 
 # interactive plot
 #tkplot(g)
@@ -533,8 +525,6 @@ plot(g, layout=layout,
      vertex.label.family = "Helvetica",
      vertex.label.cex = 0.5,
      vertex.color='darkslategray3')
-
-hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
 ```
 
 ### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
@@ -553,8 +543,9 @@ cities <- subset(cities, !(city %in% bad_cities))
 
 X <- as.matrix(cities[,c('latitude','longitude')])
 
-source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeans.R')
 nclusters <- 6
+
+source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeans.R')
 res <- k.means(X, nclusters)
 r.nks <- res$r.nks
 colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
@@ -562,8 +553,8 @@ cities <- cbind(cities, r.nks)
 
 regions <- factor(apply(cities, 1, function(x) which(x == 1)), 
                     labels = colnames(cities)[4:9]) 
-
 cities <- cbind(cities, regions)
+regions.list <- sort(as.character(unique(regions)))
 
 library(ggmap)
 
@@ -575,16 +566,48 @@ map <- map +
              aes(x = longitude, y = latitude, label = city, colour = regions), size = 3, vjust = .5, hjust = .8)
 map
 
+# Matrix of coefficients for region effects for each city
+# ncities x nregions + 1 (same region)
+region_coeffs <- matrix(nrow=nrow(cities), ncol=length(regions.list)+1)
+dimnames(region_coeffs) <- list(unique(cities$city), c('same_region', regions.list))
+
 # for every city, calculate avg same_region and avg_other_regions
 # doing counts so using glm - poisson
 for (i in 1:nrow(cities)) {
   city <- cities[i,]
   region <- city$regions
   same_region_cities <- setdiff(cities[cities$regions == region,]$city, city$city)
-  day_avgs_same_region <- rowMeans(events_by_date_city.v2[,same_region_cities])
-  day_avgs_diff_regions <- rowMeans(events_by_date_city.v2[,setdiff(colnames(events_by_date_city), c(same_region_cities,city$city))])
+  day_avgs_same_region <- rowMeans(events_by_date_city[,same_region_cities])
+
+  region_avgs <- list()
+  # get averages for other regions
+  for (ridx in 1:length(regions.list)) {
+    c_region <- regions.list[ridx]
+    if (!c_region == as.character(region)) {
+      c_region_cities <- cities[cities$regions == c_region,]
+      avg_c_region <- rowMeans(events_by_date_city[,c_region_cities$city])
+      region_avgs[[c_region]] <- avg_c_region
+    }
+  }
+  region_avgs[['same_region']] = day_avgs_same_region
   
-  model <- glm(events_by_date_city.v2[,city$city] ~ day_avgs_same_region + day_avgs_diff_regions, family='poisson')
-  summary(model)
+  region_avgs_df <- as.matrix(as.data.frame(region_avgs))
+  model <- lm(events_by_date_city[,city$city] ~ 0+region_avgs_df)
+  coeffs <- coefficients(model)
+  names(coeffs) <- lapply(names(coeffs), function(n) { gsub("region_avgs_df", "", n) })
+
+  for (ridx in 1:length(regions.list)) {
+    c_region <- regions.list[ridx]
+    region_coeffs[city$city,c_region] = coeffs[c_region]
+  }
+  region_coeffs[city$city,'same_region'] = coeffs['same_region']
 }
+
+colors = brewer.pal(length(regions.list), 'RdYlBu')
+plot(region_coeffs[,'same_region'], col=colors[1], type='l')
+for (ridx in 1:length(regions.list)) {
+  lines(region_coeffs[,regions.list[ridx]], col=colors[ridx+1], type='l')
+}
+
+boxplot(region_coeffs, use.cols = TRUE)
 ```
