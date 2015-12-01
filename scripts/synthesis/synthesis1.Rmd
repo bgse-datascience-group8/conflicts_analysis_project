@@ -541,18 +541,18 @@ cities <- unique(cities)
 bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
 cities <- subset(cities, !(city %in% bad_cities))
 
-X <- as.matrix(cities[,c('latitude','longitude')])
+X <- as.matrix(cities[,c('longitude','latitude')])
 
-nclusters <- 6
-
-source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeans.R')
+nclusters <- 5
+# FIXME: K-means is not clustering as well horizontally
+source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeansGdist.R')
 res <- k.means(X, nclusters)
 r.nks <- res$r.nks
 colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
 cities <- cbind(cities, r.nks)
 
 regions <- factor(apply(cities, 1, function(x) which(x == 1)), 
-                    labels = colnames(cities)[4:9]) 
+                    labels = colnames(cities)[4:(nclusters+4-1)]) 
 cities <- cbind(cities, regions)
 regions.list <- sort(as.character(unique(regions)))
 
@@ -601,12 +601,6 @@ for (i in 1:nrow(cities)) {
     region_coeffs[city$city,c_region] = coeffs[c_region]
   }
   region_coeffs[city$city,'same_region'] = coeffs['same_region']
-}
-
-colors = brewer.pal(length(regions.list), 'RdYlBu')
-plot(region_coeffs[,'same_region'], col=colors[1], type='l')
-for (ridx in 1:length(regions.list)) {
-  lines(region_coeffs[,regions.list[ridx]], col=colors[ridx+1], type='l')
 }
 
 boxplot(region_coeffs, use.cols = TRUE)
