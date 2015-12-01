@@ -1,4 +1,5 @@
 var express = require('express');
+
 var app = express();
 
 app.set('view engine', 'jade');
@@ -15,6 +16,22 @@ app.get('/', function (req, res) {
 
 app.get('/map', function (req, res) {
   res.render('map');
+});
+
+app.get('/summary', function (req, res) {
+  res.render('summary');
+});
+
+app.get('/analysis', function (req, res) {
+  res.render('analysis');
+});
+
+app.get('/conclusions', function (req, res) {
+  res.render('conclusions');
+});
+
+app.get('/about', function (req, res) {
+  res.render('about');
 });
 
 var mysql      = require('mysql');
