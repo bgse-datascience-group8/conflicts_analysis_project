@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "web": "node ./bin/www"
+    "start": "node app.js"
   },
   "dependencies": {
     "body-parser": "~1.13.2",
@@ -12,11 +12,17 @@
     "d3": "^3.5.9",
     "debug": "~2.2.0",
     "express": "~4.13.1",
+    "foreman": "1.4.1",
     "jade": "^1.11.0",
     "jsdom": "^7.1.0",
     "morgan": "~1.6.1",
     "mysql": "^2.9.0",
     "serve-favicon": "~2.3.0",
     "topojson": "^1.6.19"
-  }
+  },
+  "main": "app.js",
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }

@@ -1,0 +1,49 @@
+extends layout
+
+block content
+  div.container
+    div.jumbotron
+      h1 Analysis
+      br
+
+      h2 Auto-Correlation Analysis      
+      br
+
+      h3 Example of Auto-Correlation in 1 city: Boston
+      br
+      img(src='images/analysis_boston_ex1.png')
+      br
+      img(src='images/analysis_boston_ex2.png')
+      br
+
+      h3 Auto-Correlation for all cities from 1 to nth-day lag
+      br
+      img(src='images/analysis_lag_coeffs.png')
+      br
+      img(src='images/analysis_lag_boxplot.png')
+
+      h2 Network Analysis
+      br
+
+      h3 Network: Basic Lasso Neighborhood
+      br
+      img(src='images/analysis_network_heatmap.png')
+      br
+      img(src='images/analysis_network_basic_lasso.png')
+      br
+      img(src='images/analysis_network_basic_lasso_hist.png')
+      br
+      img(src='images/analysis_network_basic_lasso_map.png')
+
+      h3 Network: SPACE Algorithm
+      br
+      img(src='images/analysis_network_space.png')
+      br
+      img(src='images/analysis_network_space_hist.png')
+
+      h3 Network: K-means Clustering of Regions and Effects
+      br
+      img(src='images/analysis_kluster_map.png')
+      br
+      img(src='images/analysis_kluster_region_coeffs_boxplot.png')
+      

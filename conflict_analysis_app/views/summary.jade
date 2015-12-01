@@ -1,0 +1,33 @@
+extends layout
+
+block content
+  div.container
+    div.jumbotron
+      h1 Summary
+      br
+
+      p For more on the original database creation, see   
+        a(href='https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/documentation/database.md') the database documentation in our github repo.
+
+      br
+      h2 Data sub-selection by numbers:
+      ol
+        li The city_day_event_counts_plus is a table of number of conflict events per day per city in the U.S. between April 2013 and November 6, 2015.
+        li Started with 2,018 cities having conflicts since 2013, with a total of 1,507,041 events.
+        li Removed cities in Alaska and Hawaii
+        li Sub-select to 100 cities with the most data:
+        ol
+          li Summed the number of days per city represented, took the top 100
+          li 82% of conflicts are represented by these top 100 cities
+          li
+            a(href='https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/sql/top_cities.sql') top_cities.sql
+
+      br
+      img(src='images/summary_num_conflicts_raw.png')
+      br
+      img(src='images/summary_num_conflicts_smooth.png')
+      br
+      img(src='images/summary_std_num_conflicts.png')
+      br
+      img(src='images/summary_weekly_trends.png')
+
