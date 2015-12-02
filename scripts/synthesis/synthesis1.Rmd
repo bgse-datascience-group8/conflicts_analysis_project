@@ -57,9 +57,9 @@ m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
 summary(m)
 
 png(paste0(images_dir,'summary_population.png'), bg = "transparent", width=1200, height=1200, units='px')
-ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) + 
+ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
   geom_point() + 
-  geom_line(aes(y=fitted.values(m)), color='darkgrey') +
+  geom_line(aes(y=fitted.values(m)), color='darkgrey', size=1.5) +
   theme(legend.position='none')
 dev.off()
 ```
@@ -98,9 +98,6 @@ plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city
   scale_colour_manual(values=rep('#56B4E9',100)) +
   theme(legend.position = "none")
 
-png(paste0(images_dir,'summary_num_conflicts_smooth.png'), bg = "transparent", width=1200, height=1200, units='px')
-multiplot(plot1, plot2, cols=1)
-dev.off()
 ```
 
 [ADD ME]: Correlation between time and mean of data
@@ -129,8 +126,8 @@ plot <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city))
   scale_colour_manual(values=rep('#56B4E9',100)) +
   theme(legend.position = "none")
 
-png(paste0(images_dir,'summary_std_num_conflicts.png'), bg = "transparent", width=1200, height=1200, units='px')
-plot
+png(paste0(images_dir,'summary_num_conflicts_smooth.png'), bg = "transparent", width=1200, height=400, units='px')
+multiplot(plot1, plot2, plot, cols=3)
 dev.off()
 ```
 
