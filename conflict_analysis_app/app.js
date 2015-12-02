@@ -26,6 +26,10 @@ app.get('/analysis', function (req, res) {
   res.render('analysis');
 });
 
+app.get('/results', function (req, res) {
+  res.render('results');
+});
+
 app.get('/conclusions', function (req, res) {
   res.render('conclusions');
 });

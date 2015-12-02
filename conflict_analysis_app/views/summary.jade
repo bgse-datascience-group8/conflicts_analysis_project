@@ -2,31 +2,62 @@ extends layout
 
 block content
   div.container
+    nav.navbar.navbar-default.navbar-fixed-top#navbar-page
+      .container-fluid
+        // Collect the nav links, forms, and other content for toggling
+        #bs-example-navbar-collapse-1.collapse.navbar-collapse
+          ul.nav.navbar-nav
+            li
+              a(href='#') Top 
+            li
+              a(href='#subselection') Subselection
+            li
+              a(href='#standardization') Standardization
+            li
+              a(href='#weekend') Weekend
+            li
+              a(href='#population') Population
+            li
+              a(href='#summary') Summary
     div.jumbotron
-      h1 Summary
-      br
-
-      p For more on the original database creation, see   
+      h1 Data Summary
+      p Here, we examine the raw data in order to understand its endogenous characteristics.
+      p For more on the original dataset creation, see   
         a(href='https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/documentation/database.md') the database documentation in our github repo.
 
       br
-      h2 Data sub-selection by numbers:
+      h2#subselection Subselection:
+      br
       ol
-        li The city_day_event_counts_plus is a table of number of conflict events per day per city in the U.S. between April 2013 and November 6, 2015.
+        li The city_day_event_counts_plus is a table of number of conflict events per day per city in the U.S. between July 2013 and November 6, 2015.
         li Started with 2,018 cities having conflicts since 2013, with a total of 1,507,041 events.
         li Removed cities in Alaska and Hawaii
+        li Washington D.C. is over-represented over 6 times second highest conflicted city.
         li Sub-select to 100 cities with the most data:
         ol
-          li Summed the number of days per city represented, took the top 100
-          li 82% of conflicts are represented by these top 100 cities
-          li
-            a(href='https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/sql/top_cities.sql') top_cities.sql
+          li Sub-selected cities as those with the greatest number of days with data
+          li 82% of conflicts are represented by these top 100 cities (script: 
+            a(href='https://github.com/bgse-datascience-group8/conflicts_analysis_project/blob/master/scripts/sql/top_cities.sql') top_cities.sql)
 
+      h2#standardization Raw vs Log vs Standardized Data
       br
       img(src='images/summary_num_conflicts_raw.png')
       br
+      h2 Raw vs Log vs Standardized Data
+      br
       img(src='images/summary_num_conflicts_smooth.png')
+      br
+      h2#weekend Weekend Effect
       br
       img(src='images/summary_weekly_trends.png')
       br
+      h2#population Population Effect
+      br
       img(src='images/summary_population.png')
+      br
+      h2#summary Summary
+      ul
+        li Washington D.C. has a different mean - include dummy isWashingtonDC
+        li Data is stationary over our time period, don't need to standardize or difference the data with respect to time
+        li Weekend has a negative effect - include a weekend dummy
+        li Population has a positive and non-linear effect

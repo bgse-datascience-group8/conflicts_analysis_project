@@ -41,10 +41,18 @@ block head
 
 block content
   div.container
+    nav.navbar.navbar-default.navbar-fixed-top#navbar-page
+      .container-fluid
+        // Collect the nav links, forms, and other content for toggling
+        #bs-example-navbar-collapse-1.collapse.navbar-collapse
+          ul.nav.navbar-nav
+            li
+              a(href='#') Top
+            li
+              a(href='#objective') Objective
     div.jumbotron
       h1.smallish U.S. Conflicts 
         span#date 2013-04-01
-
     script(src='javascripts/d3.v3.min.js')
     script(src='javascripts/topojson.v1.min.js')
     script.
@@ -219,4 +227,35 @@ block content
         };
       }
       renderMap()
-
+    br
+    div#objective
+      h1 Does conflict spread?
+      br
+      p What is spread?
+      br
+      p 
+        | To study the hypothesis that conflict spreads, we need a definition of spread. Here,
+        b  spread 
+        | is defined as the relationship between an outcome and its place in space and time.
+      br
+      p The dependent variable in our analysis is the number of conflicts in a U.S. city in a given day at a given time.
+      br
+      p The structure of our analysis is as follows:
+      ol
+        li
+          a(href='/summary') Summary:
+          |  Summarize the dataset and understand its endogenous characteristics
+        li
+          a(href='/analysis#auto-corr') Auto-Correlation Analysis:
+          |  Understand the effect of time
+        li
+          a(href='/analysis#spatial') Network & Geo-Cluster Analysis:
+          |  Understand the effect of other cities across the space
+        li
+          a(href='/analysis#aggregated-model') Results:
+          |  An aggregated model estimating the effects space and time jointly
+        li
+          a(href='/conclusion') Conclusions
+    br
+    br
+    br

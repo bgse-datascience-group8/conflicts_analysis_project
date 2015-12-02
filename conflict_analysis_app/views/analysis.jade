@@ -2,30 +2,45 @@ extends layout
 
 block content
   div.container
+    nav.navbar.navbar-default.navbar-fixed-top#navbar-page
+      .container-fluid
+        // Collect the nav links, forms, and other content for toggling
+        #bs-example-navbar-collapse-1.collapse.navbar-collapse
+          ul.nav.navbar-nav
+            li
+              a(href='#') Top 
+            li
+              a(href='#autocorr-ex') Auto-Correlation Example: Boston
+            li
+              a(href='#autocorr-all') Auto-Correlation for N-days
+            li
+              a(href='#basic-lasso') Network Analysis: Lasso
+            li
+              a(href='#space') Space
+            li
+              a(href='#kmeans') Kmeans
+            li
+              a(href='#summary') Summary
+
     div.jumbotron
-      h1 Analysis
-      br
+      h1#autocorr Auto-Correlation Analysis
 
-      h2 Auto-Correlation Analysis      
-      br
-
-      h3 Example of Auto-Correlation in 1 city: Boston
+      h2#autocorr-ex Example of Auto-Correlation in 1 city: Boston
       br
       img(src='images/analysis_boston_ex1.png')
       br
       img(src='images/analysis_boston_ex2.png')
       br
 
-      h3 Auto-Correlation for all cities from 1 to nth-day lag
+      h2#autocorr-all Auto-Correlation for all cities from 1 to nth-day lag
       br
       img(src='images/analysis_lag_coeffs.png')
       br
       img(src='images/analysis_lag_boxplot.png')
 
-      h2 Network Analysis
-      br
+      h1#network Network Analysis
 
-      h3 Network: Basic Lasso Neighborhood
+      h2#basic-lasso Network: Basic Lasso Neighborhood
       br
       img(src='images/analysis_network_heatmap.png')
       br
@@ -35,15 +50,19 @@ block content
       br
       img(src='images/analysis_network_basic_lasso_map.png')
 
-      h3 Network: SPACE Algorithm
+      h2#space Network: SPACE Algorithm
       br
       img(src='images/analysis_network_space.png')
       br
       img(src='images/analysis_network_space_hist.png')
 
-      h3 Network: K-means Clustering of Regions and Effects
+      h2#kmeans Network: K-means Clustering of Regions and Effects
       br
       img(src='images/analysis_kluster_map.png')
       br
       img(src='images/analysis_kluster_region_coeffs_boxplot.png')
       
+      h2#summary Summary
+
+      p In summary, auto-correlation matters, while network and distance, some evidence but hard to tell its significance from 100 different cities.
+

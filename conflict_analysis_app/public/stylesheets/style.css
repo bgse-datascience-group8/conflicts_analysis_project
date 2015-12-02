@@ -1,7 +1,10 @@
 body {
-  padding-top: 90px;
-  font-size: 16px;
+  font-size: 20px;
   font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+}
+
+.navbar {
+  font-size: 14px;
 }
 
 a {
@@ -10,12 +13,25 @@ a {
 
 img {
   max-width: 1020px;
+  display: block;
+  margin: 0px auto;
+}
+
+h1, h2 {
+  padding-top:140px;
+}
+
+#navbar-page {
+  top:50px;
 }
 
 .jumbotron p {
   font-size: 16px;
 }
 
+.jumbotron {
+  background-color: white; 
+}
 .background {
   fill: none;
   pointer-events: all;
