@@ -36,6 +36,30 @@ data <- dbFetch(res, n = -1)
 # Standard data formatting
 data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
 data$city <- paste0(data$name, ', ', data$admin1_code)
+data$city <- factor(data$city)
+data$population <- as.numeric(data$population)
+```
+
+We want to know is there a relationship between population and num of conflicts (seems very likely!)
+
+```{r, echo = FALSE, warnings = FALSE, messages=FALSE}
+city_means <- tapply(data$num_conflicts, data$city, FUN=mean)
+city_means <- cbind(as.data.frame(city_means), row.names(city_means))
+colnames(city_means) <- c('city_mean','city')
+
+data <- merge(data, city_means, by = 'city', all.x = TRUE)
+
+data$log_population <- log(data$population)
+data$log_population_sq <- data$log_population**2
+
+m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
+
+summary(m)
+#[ADD ME TO APP]
+ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) + 
+  geom_point() + 
+  geom_line(aes(y=fitted.values(m)), color='darkgrey') +
+  theme(legend.position='none')
 ```
 
 # Data standardization
@@ -108,7 +132,7 @@ plot
 dev.off()
 ```
 
-But adding a log(num_conflicts) column given data looks mostly stationary.
+But added a log(num_conflicts) column given data looks mostly stationary.
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 data$log_num_conflicts <- log(data$num_conflicts)
@@ -542,9 +566,6 @@ dev.off()
 cities <- data[,c('city','latitude','longitude')]
 cities <- unique(cities)
 
-bad_cities <- c('Moscow, 48','Honolulu, HI','Anchorage, AK','Fairbanks, AK')
-cities <- subset(cities, !(city %in% bad_cities))
-
 X <- as.matrix(cities[,c('longitude','latitude')])
 
 nclusters <- 5
@@ -578,6 +599,9 @@ dev.off()
 region_coeffs <- matrix(nrow=nrow(cities), ncol=length(regions.list)+1)
 dimnames(region_coeffs) <- list(unique(cities$city), c('same_region', regions.list))
 
+region_day_avgs_mat <- matrix(nrow=nrow(events_by_date_city), ncol=length(regions.list)+3)
+dimnames(region_day_avgs_mat) <- list(1:nrow(events_by_date_city), c('datef','city','same_region', regions.list))
+
 # for every city, calculate avg same_region and avg_other_regions
 # doing counts so using glm - poisson
 for (i in 1:nrow(cities)) {
@@ -587,30 +611,83 @@ for (i in 1:nrow(cities)) {
   day_avgs_same_region <- rowMeans(events_by_date_city[,same_region_cities])
 
   region_avgs <- list()
+  region_avgs[['same_region']] = day_avgs_same_region
   # get averages for other regions
   for (ridx in 1:length(regions.list)) {
     c_region <- regions.list[ridx]
     if (!c_region == as.character(region)) {
       c_region_cities <- cities[cities$regions == c_region,]
-      avg_c_region <- rowMeans(events_by_date_city[,c_region_cities$city])
+      avg_c_region <- rowMeans(events_by_date_city[,as.character(c_region_cities$city)])
       region_avgs[[c_region]] <- avg_c_region
+    } else {
+      region_avgs[[c_region]] <- 0
     }
   }
-  region_avgs[['same_region']] = day_avgs_same_region
   
   region_avgs_df <- as.matrix(as.data.frame(region_avgs))
-  model <- lm(events_by_date_city[,city$city] ~ 0+region_avgs_df)
+  city_name <- toString(city$city)
+  rad <- cbind(rep(city_name, nrow(region_avgs_df)), region_avgs_df)
+  rad <- cbind(unique(as.character(data$datef)), rad)
+  
+  region_day_avgs_mat <- rbind(region_day_avgs_mat, rad) 
+
+  model <- lm(events_by_date_city[,as.character(city$city)] ~ 0+region_avgs_df)
   coeffs <- coefficients(model)
   names(coeffs) <- lapply(names(coeffs), function(n) { gsub("region_avgs_df", "", n) })
 
   for (ridx in 1:length(regions.list)) {
     c_region <- regions.list[ridx]
-    region_coeffs[city$city,c_region] = coeffs[c_region]
+    region_coeffs[as.character(city$city),c_region] = coeffs[c_region]
   }
-  region_coeffs[city$city,'same_region'] = coeffs['same_region']
+  region_coeffs[as.character(city$city),'same_region'] = coeffs['same_region']
+}
+
+
+final <- region_day_avgs_mat[!(is.na(region_day_avgs_mat[,'same_region'])),]
+final <- as.data.frame(final, stringsAsFactors=FALSE)
+final$city <- factor(final$city)
+final$datef <- as.Date(as.character(final$datef), format = '%Y-%m-%d')
+for (i in c('same_region', regions.list)) {
+  final[,i] <- as.numeric(final[,i])
 }
 
 png(paste0(images_dir,'analysis_kluster_region_coeffs_boxplot.png'), bg = "transparent", width=1200, height=1200, units='px')
 boxplot(region_coeffs, use.cols = TRUE, ylim=c(-0.5,1.5))
 dev.off()
 ```
+
+
+# Master Table
+
+$log_num_conflicts = lag.log_num_mentions + same_region_avg + other_region_avgs + log_population + log_population_sq + wday$
+
+```{r}
+data <- cbind(data, with(data, model.matrix(~ wday + 0)))
+city_data <- data[,c('city_mean','city','latitude','log_population','longitude','log_population_sq','geonameid')]
+city_data <- merge(city_data, cities[,c('city','regions')], by = 'city')
+city_data <- unique(city_data)
+city_data$isWashingtonDC <- ifelse(city_data$city == 'Washington, D.C., DC', 1, 0)
+
+data2 <- data[,c('log_num_conflicts', 'city', 'datef')]
+data2 <- dcast(data = data2, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
+data2 <- melt(data2, id.vars='datef')
+#install.packages('DataCombine')
+library(DataCombine)
+data2 <- slide(data2, Var = "value", GroupVar = "variable", slideBy = -1)
+colnames(data2) <- c('datef','city','log_num_conflicts','lag.log_num_conflicts')
+#final$city <- as.character(final$city)
+#data2$city <- toString(data2$city)
+data3 <- merge(data2, final, by=c('city','datef'))
+
+master.table <- merge(data3, city_data, by='city')
+#head(master.table <- unique(master.table)
+
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region','region.1','region.2','region.3','region.4','region.5','log_population','log_population_sq', 'isWashingtonDC')]
+master.table.2$city_mean <- as.numeric(master.table.2$city_mean)
+master.table.2[is.na(master.table.2)] <- 0
+head(master.table.2)
+m <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
+summary(m)
+```
+
+[ADDME: isWashingtonDC]
