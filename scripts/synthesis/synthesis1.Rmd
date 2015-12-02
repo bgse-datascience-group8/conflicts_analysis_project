@@ -693,3 +693,30 @@ head(master.table.2)
 m <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
 summary(m)
 ```
+
+Cross - validation
+
+```{r}
+# cross - validate using 5 subsets of the master table
+B <- 5
+blocks <- ceiling( B * (1:nrow(master.table.2)/nrow(master.table.2)))
+
+slices = list()
+models = list()
+r_squareds = c()
+MSEs = c()
+
+for (i in 1:B) {
+  
+  slices[[i]] = master.table.2[ blocks == i, ]
+  models[[i]] = lm(data = slices[[i]], log_num_conflicts ~ 0 + .)
+  r_squareds[i] = summary(models[[i]])$r.squared 
+  MSEs[i] = mean(models[[i]]$residuals^2)
+  
+}
+
+r_squareds
+MSEs
+mean(r_squareds)
+mean(MSEs)
+```
