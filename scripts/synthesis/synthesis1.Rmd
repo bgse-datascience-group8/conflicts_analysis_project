@@ -23,10 +23,10 @@ library(reshape)
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
-
-images_dir <- '~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/conflict_analysis_app/public/images/'
+setwd('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/')
+images_dir <- 'conflict_analysis_app/public/images/'
 rcolors <- brewer.pal(11, 'Spectral')
-source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/helpers.R')
+source('scripts/synthesis/helpers.R')
 
 con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
 
@@ -55,11 +55,13 @@ data$log_population_sq <- data$log_population**2
 m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
 
 summary(m)
-#[ADD ME TO APP]
+
+png(paste0(images_dir,'summary_population.png'), bg = "transparent", width=1200, height=1200, units='px')
 ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) + 
   geom_point() + 
   geom_line(aes(y=fitted.values(m)), color='darkgrey') +
   theme(legend.position='none')
+dev.off()
 ```
 
 # Data standardization
@@ -378,7 +380,7 @@ dev.off()
 ## Neighborhoods
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
-source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/data_expoloration/lasso.R')
+source('scripts/data_expoloration/lasso.R')
 X <- events_by_date_city
 # for every column of X, want to run lasso on all other columns
 # update coeff matrix, should be pxp
@@ -570,7 +572,7 @@ X <- as.matrix(cities[,c('longitude','latitude')])
 
 nclusters <- 5
 # FIXME: K-means is not clustering as well horizontally
-source('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/scripts/synthesis/kmeansGdist.R')
+source('scripts/synthesis/kmeansGdist.R')
 res <- k.means(X, nclusters)
 r.nks <- res$r.nks
 colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
@@ -668,26 +670,29 @@ city_data <- merge(city_data, cities[,c('city','regions')], by = 'city')
 city_data <- unique(city_data)
 city_data$isWashingtonDC <- ifelse(city_data$city == 'Washington, D.C., DC', 1, 0)
 
-data2 <- data[,c('log_num_conflicts', 'city', 'datef')]
+data2 <- data[,c('log_num_conflicts', 'city', 'datef','wdayweekend')]
 data2 <- dcast(data = data2, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
 data2 <- melt(data2, id.vars='datef')
+data2 <- slide(data2, Var = "value", GroupVar = "variable", slideBy = -1)
+
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+
+data2$wday <- factor((weekdays(data2$datef) %in% weekdays1), 
+         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+data2 <- cbind(data2, with(data2, model.matrix(~ wday + 0)))
+
 #install.packages('DataCombine')
 library(DataCombine)
-data2 <- slide(data2, Var = "value", GroupVar = "variable", slideBy = -1)
-colnames(data2) <- c('datef','city','log_num_conflicts','lag.log_num_conflicts')
-#final$city <- as.character(final$city)
-#data2$city <- toString(data2$city)
+colnames(data2) <- c('datef','city','log_num_conflicts','lag.log_num_conflicts','wday','weekend','weekday')
+
 data3 <- merge(data2, final, by=c('city','datef'))
 
 master.table <- merge(data3, city_data, by='city')
 #head(master.table <- unique(master.table)
 
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region','region.1','region.2','region.3','region.4','region.5','log_population','log_population_sq', 'isWashingtonDC')]
-master.table.2$city_mean <- as.numeric(master.table.2$city_mean)
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region','region.1','region.2','region.3','region.4','region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
 head(master.table.2)
 m <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
 summary(m)
 ```
-
-[ADDME: isWashingtonDC]
