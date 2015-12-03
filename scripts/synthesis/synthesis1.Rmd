@@ -66,8 +66,7 @@ library(Rmisc)
 plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_line() +
   theme(
     legend.position = "none",
-    panel.background = element_blank()) +
-  ggtitle
+    panel.background = element_blank())
 
 plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_line() +
   theme(
@@ -157,11 +156,10 @@ data$log_population_sq <- data$log_population**2
 
 m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
 
-summary(m)
 p1 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
   geom_point() + 
   theme(legend.position='none', panel.background = element_blank()) +
-  ggtitle('Log Population v Avg Log Number of Conflicts')
+  ggtitle('City Log Population v Avg Log Number of Conflicts')
 p2 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
   geom_point() + 
   geom_line(aes(y=fitted.values(m)), color='darkgrey', size=1.5) +
@@ -230,7 +228,8 @@ plot <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, M
   geom_line(aes(y=least_sqrs_beta.fitted), colour=rcolors[sample(1:11, 1)], size=1.5) +
   theme(panel.background = element_blank())
 plot
-png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=800, height=800, units='px')
+
+png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=600, height=600, units='px')
 plot
 dev.off()
 
@@ -334,26 +333,22 @@ lag_mean_eff <- rowMeans(coeffs)
 pvalue_mean_val <- rowMeans(pvalues)
 
 dat.m <- melt(coeffs, id.vars = "value")
-plot <- ggplot(dat.m, aes(X1, value, color=factor(X2))) +
+plot1 <- ggplot(dat.m, aes(X1, value, color=factor(X2))) +
   geom_line(aes(group=X2)) + 
   theme(legend.position='none', panel.background = element_blank()) +
-  ylab('Coefficient') + xlab('n-th day lag') +
-  ggtitle('Coefficient of nth-day Lag')
-
-png(paste0(images_dir,'analysis_lag_coeffs.png'), bg = "transparent", width=800, height=800, units='px')
-plot
-dev.off()
+  ylab('Coefficient') + xlab('N-th day lag') +
+  ggtitle('Coefficient of Nth-day Lag for All Cities')
 
 dat.m <- melt(coeffs, id.vars = "group")
-plot <- ggplot(dat.m, aes(factor(X1), value)) + 
+plot2 <- ggplot(dat.m, aes(factor(X1), value)) + 
   geom_boxplot() +
   theme(panel.background = element_blank()) +
   xlab('N-th Day Lag') +
   ylab('Coefficient Quantiles') +
   ggtitle('N-th Day Lag Quantiles for All Cities')
 
-png(paste0(images_dir,'analysis_lag_boxplot.png'), bg = "transparent", width=800, height=800, units='px')
-plot
+png(paste0(images_dir,'analysis_lag_all_cities.png'), bg = "transparent", width=1200, height=600, units='px')
+multiplot(plot1,plot2,cols=2)
 dev.off()
 # FIXME: p-values are broken
 #matplot(pvalue_mean_val, type = 'l', main = 'Mean p-values', xlab = 'nth-Day Lag', ylab = 'Average p-value')
@@ -403,7 +398,7 @@ X.cor <- my.cor(X)
 X.m <- melt(X.cor)
 
 library(corrplot)
-png(paste0(images_dir,'analysis_network_heatmap.png'), bg = "transparent", width=800, height=800, units='px')
+png(paste0(images_dir,'analysis_network_heatmap.png'), bg = "transparent", width=600, height=600, units='px')
 corrplot(X.cor,method = "color", tl.cex = 0.01)
 dev.off()
 ```
@@ -454,7 +449,7 @@ f <- 99
 lasso.part <- lasso.coeffs.select[s:f,s:f]
 g <- graph.adjacency(lasso.part, weighted=T, mode = 'undirected')
 g <- simplify(g)
-V(g)$label <- colnames(events_by_date_city.v2[s:f,s:f])
+V(g)$label <- colnames(events_by_date_city[s:f,s:f])
 V(g)$degree <- degree(g)
 V(g)$size <- (V(g)$degree)
 
@@ -464,14 +459,14 @@ V(g)$size <- (V(g)$degree)
 layout <- layout.sphere
 autocurve.edges(g)
 
-png(paste0(images_dir,'analysis_network_basic_lasso.png'), bg = "transparent", width=1200, height=1200, units='px')
+png(paste0(images_dir,'analysis_network_basic_lasso.png'), bg = "transparent", width=1000, height=1000, units='px')
 plot(g, layout=layout,
      vertex.label.family = "Helvetica",
      vertex.label.cex = 1.25,
      vertex.color='grey')
 dev.off()
 
-png(paste0(images_dir,'analysis_network_basic_lasso_hist.png'), bg = "transparent", width=800, height=600, units='px')
+png(paste0(images_dir,'analysis_network_basic_lasso_hist.png'), bg = "transparent", width=600, height=400, units='px')
 hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
 dev.off()
 ```
@@ -547,9 +542,9 @@ map <- map +
     xend = as.numeric(network$city.2.long)),
     colour = 'steelblue2') +
   geom_text(data = cities, 
-             aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', vjust = .5, hjust = .8) + theme(panel.background = element_blank())
+             aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', vjust = 1, hjust = .8) + theme(panel.background = element_blank())
 
-png(paste0(images_dir,'analysis_network_basic_lasso_map.png'), bg = "transparent", width=1200, height=800, units='px')
+png(paste0(images_dir,'analysis_network_basic_lasso_map.png'), bg = "transparent", width=1000, height=600, units='px')
 map
 dev.off()
 ```
@@ -576,14 +571,14 @@ V(g)$size <- V(g)$degree
 #tkplot(g)
 layout <- layout.fruchterman.reingold
 
-png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=1200, height=1200, units='px')
+png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=1000, height=1000, units='px')
 plot(g, layout=layout.sphere,
      vertex.label.family = "Helvetica",
      vertex.label.cex = 1,
      vertex.color='grey')
 dev.off()
 
-png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=800, height=800, units='px')
+png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=600, height=400, units='px')
 hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
 dev.off()
 ```
@@ -624,7 +619,7 @@ map <- map +
              aes(x = longitude, y = latitude, label = city, colour = regions), size = 5, vjust = .5, hjust = .8) +
   theme(panel.background = element_blank())
 
-png(paste0(images_dir,'analysis_kluster_map.png'), bg = "transparent", width=1200, height=700, units='px')
+png(paste0(images_dir,'analysis_kluster_map.png'), bg = "transparent", width=1000, height=600, units='px')
 map
 dev.off()
 
@@ -695,6 +690,10 @@ dev.off()
 
 $log_num_conflicts = lag.log_num_mentions + same_region_avg + other_region_avgs + log_population + log_population_sq + wday$
 
+\usepackage[scaled]{helvet}
+\renewcommand\familydefault{\sfdefault} 
+\usepackage[T1]{fontenc}
+
 ```{r}
 data <- cbind(data, with(data, model.matrix(~ wday + 0)))
 city_data <- data[,c('city_mean','city','latitude','log_population','longitude','log_population_sq','geonameid')]
@@ -724,9 +723,23 @@ master.table <- merge(data3, city_data, by='city')
 
 master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region','region.1','region.2','region.3','region.4','region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
-head(master.table.2)
-m <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
-summary(m)
+#head(master.table.2)
+m1 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
+
+
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population','log_population_sq', 'isWashingtonDC','weekend')]
+master.table.2[is.na(master.table.2)] <- 0
+#head(master.table.2)
+m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
+
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population','log_population_sq', 'isWashingtonDC','weekend')]
+master.table.2[is.na(master.table.2)] <- 0
+#head(master.table.2)
+m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
+
+#install.packages('stargazer')
+library(stargazer)
+capture.output(stargazer(m1, m2, align=TRUE, type = 'html', omit.stat=c("f")), file = 'summary.html')
 ```
 
 Cross - validation
@@ -752,6 +765,13 @@ for (i in 1:B) {
 
 r_squareds
 MSEs
-mean(r_squareds)
-mean(MSEs)
+mrs <- mean(r_squareds)
+mmse <- mean(MSEs)
+mat <- matrix(c(r_squareds, mrs, MSEs, mmse), ncol=6, nrow=2, byrow = TRUE)
+colnames <- c(unlist(lapply('Test ', paste0, 1:5)), 'Average')
+rownames <- c('R-squared', 'Mean Squared Error')
+dimnames(mat) <- list(rownames, colnames)
+library(xtable)
+mat.table <- xtable(mat)
+capture.output(print(mat.table, type = 'html'), file = 'cross-val.html')
 ```

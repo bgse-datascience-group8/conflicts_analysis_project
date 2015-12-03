@@ -30,10 +30,6 @@ app.get('/results', function (req, res) {
   res.render('results');
 });
 
-app.get('/conclusions', function (req, res) {
-  res.render('conclusions');
-});
-
 app.get('/about', function (req, res) {
   res.render('about');
 });

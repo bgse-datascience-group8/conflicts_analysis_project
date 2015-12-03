@@ -21,6 +21,10 @@ h1, h2 {
   padding-top:140px;
 }
 
+td, th {
+  padding: 5px;
+}
+
 #navbar-page {
   top:50px;
 }
@@ -58,4 +62,10 @@ h1, h2 {
   color: #ffffff;
   fill: .000001;
   opacity: .000001;
+}
+
+.results-table {
+  float: left;
+  max-width: 50%;
+  font-size: 16px;
 }
