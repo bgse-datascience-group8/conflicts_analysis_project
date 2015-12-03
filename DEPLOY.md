@@ -8,8 +8,15 @@
 6. 
     ```sh
     wget https://s3-eu-west-1.amazonaws.com/abarciauskas-bgse/events.zip
-    unzip events.zip -d public/javascripts/
+    unzip events.zip
+    mkdir public/javascripts/events
+    mv events/* public/javascripts/events/
     ```
 
 7. `npm install`
-8. `node app.js`
+8. `nohup node app.js > output.log &`
+
+## Todo
+
+* Remove 2013-05-13 & 2013-05-14
+* Fix size of circles

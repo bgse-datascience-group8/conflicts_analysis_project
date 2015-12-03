@@ -223,27 +223,18 @@ least_sqrs_beta.residuals <- y - least_sqrs_beta.fitted
 boston.df <- data.frame(boston[,1], least_sqrs_beta.fitted, least_sqrs_beta.residuals)
 colnames(boston.df) <- c('actual','fitted','residuals')
 
-plot <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, MA.day0`)) +
+p1 <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, MA.day0`)) +
   geom_point(colour=rcolors[sample(1:11, 1)]) + 
   geom_line(aes(y=least_sqrs_beta.fitted), colour=rcolors[sample(1:11, 1)], size=1.5) +
   theme(panel.background = element_blank())
-plot
 
-png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=600, height=600, units='px')
-plot
-dev.off()
-
-p1 <- ggplot(boston.df, aes(x=X[,2], y=residuals)) +
+p2 <- ggplot(boston.df, aes(x=X[,2], y=least_sqrs_beta.residuals)) +
   geom_point(colour=rcolors[sample(1:11, 1)]) +
   theme(panel.background = element_blank()) +
   xlab('Lag') +
-  ggtitle('Lag vs Residuals')
-  
-p2 <- ggplot(boston.df, aes(x=actual, y=residuals)) + geom_point(colour=rcolors[sample(1:11, 1)]) +
-  theme(panel.background = element_blank()) +
-  ggtitle('Actual vs Residuals')
+  ggtitle('1-day Lag vs Residuals')
 
-png(paste0(images_dir,'analysis_boston_ex2.png'), bg = "transparent", width=1200, height=600, units='px')
+png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=1200, height=600, units='px')
 multiplot(p1, p2, cols=2)
 dev.off()
 ```
@@ -690,10 +681,6 @@ dev.off()
 
 $log_num_conflicts = lag.log_num_mentions + same_region_avg + other_region_avgs + log_population + log_population_sq + wday$
 
-\usepackage[scaled]{helvet}
-\renewcommand\familydefault{\sfdefault} 
-\usepackage[T1]{fontenc}
-
 ```{r}
 data <- cbind(data, with(data, model.matrix(~ wday + 0)))
 city_data <- data[,c('city_mean','city','latitude','log_population','longitude','log_population_sq','geonameid')]
@@ -721,16 +708,11 @@ data3 <- merge(data2, final, by=c('city','datef'))
 master.table <- merge(data3, city_data, by='city')
 #head(master.table <- unique(master.table)
 
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region','region.1','region.2','region.3','region.4','region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
+
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region', 'region.1', 'region.2', 'region.3', 'region.4', 'region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
 m1 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
-
-
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population','log_population_sq', 'isWashingtonDC','weekend')]
-master.table.2[is.na(master.table.2)] <- 0
-#head(master.table.2)
-m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
 
 master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
