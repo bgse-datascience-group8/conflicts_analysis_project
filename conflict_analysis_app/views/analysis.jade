@@ -20,9 +20,9 @@ block content
             li
               a(href='#kmeans') Kmeans
             li
-              a(href='#summary') Summary
-            li
               a(href='#results') Results
+            li
+              a(href='#summary') Summary
 
     div.jumbotron
       h1#autocorr Auto-Correlation Analysis
@@ -36,16 +36,17 @@ block content
       img(src='images/analysis_lag_all_cities.png')
 
       h1#network Network Analysis
-
-      h2#basic-lasso Network: Basic Lasso Neighborhood
+      h2 City-City Heatmap
       br
       img(src='images/analysis_network_heatmap.png')
+
+      h2#basic-lasso Basic Lasso Results
       br
       img(src='images/analysis_network_basic_lasso.png')
       br
       img(src='images/analysis_network_basic_lasso_hist.png')
 
-      h2#space Network: SPACE Algorithm
+      h2#space Network: SPACE Results
       br
       img(src='images/analysis_network_space.png')
       br
@@ -57,10 +58,6 @@ block content
       br
       img(src='images/analysis_kluster_region_coeffs_boxplot.png')
       
-      h2#summary Summary
-
-      p In summary, auto-correlation matters, while network and distance, some evidence but hard to tell its significance from 100 different cities.
-
       h1#results Results
       p Here are our results.
       br
@@ -304,3 +301,7 @@ block content
             td(align='right')  0.66   
       br
       div.clearfix
+
+      h1#summary Summary
+
+      p Auto-correlation matters, while there is very little evidence to support that distance matters.

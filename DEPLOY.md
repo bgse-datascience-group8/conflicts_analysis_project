@@ -15,8 +15,3 @@
 
 7. `npm install`
 8. `nohup node app.js > output.log &`
-
-## Todo
-
-* Remove 2013-05-13 & 2013-05-14
-* Fix size of circles
