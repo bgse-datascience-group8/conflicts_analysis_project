@@ -323,8 +323,6 @@ The condition of the design matrix however was very high. Cross-validation of th
 ![graph](/conflict_analysis_app/public/images/summary_population.png)
 ![graph](/conflict_analysis_app/public/images/analysis_boston_ex1.png)
 ![graph](/conflict_analysis_app/public/images/analysis_lag_all_cities.png)
-![graph](/conflict_analysis_app/public/images/analysis_lag_boxplot.png)
-![graph](/conflict_analysis_app/public/images/analysis_lag_coeffs.png)
 ![graph](/conflict_analysis_app/public/images/analysis_network_heatmap.png)
 ![graph](/conflict_analysis_app/public/images/analysis_network_lasso.png)
 ![graph](/conflict_analysis_app/public/images/analysis_network_lasso_hist.png)
