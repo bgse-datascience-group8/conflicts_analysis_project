@@ -10,47 +10,37 @@ block content
             li
               a(href='#') Top 
             li
-              a(href='#autocorr-ex') Auto-Correlation Example: Boston
+              a(href='#autocorr') Auto-Correlation: by Example and in Aggregate
             li
-              a(href='#autocorr-all') Auto-Correlation for N-days
-            li
-              a(href='#basic-lasso') Network Analysis: Lasso
-            li
-              a(href='#space') Space
-            li
-              a(href='#kmeans') Kmeans
+              a(href='#networks') Networks: Lasso, SPACE and Geo-Clustering
             li
               a(href='#results') Results
             li
               a(href='#summary') Summary
 
     div.jumbotron
-      h1#autocorr Auto-Correlation Analysis
+      h1#autocorr Auto-Correlation: by Example and in Aggregate
 
       h2#autocorr-ex Example of Auto-Correlation in 1 city: Boston
       br
       img(src='images/analysis_boston_ex1.png')
 
-      h2#autocorr-all Auto-Correlation for all cities from 1 to nth-day lag
+      h2#autocorr-all Auto-Correlation for All Cities from 1 to nth-day lag
       br
       img(src='images/analysis_lag_all_cities.png')
 
-      h1#network Network Analysis
+      h1#networks Networks: Lasso, SPACE and Geo-Clustering
       h2 City-City Heatmap
       br
       img(src='images/analysis_network_heatmap.png')
 
-      h2#basic-lasso Basic Lasso Results
+      h2#basic-lasso Lasso v SPACE Partial Correlation
       br
-      img(src='images/analysis_network_basic_lasso.png')
+      img(src='images/analysis_network_lasso.png', style='display:inline;margin-right:-15px;')
+      img(src='images/analysis_network_space.png', style='display:inline;margin-left:-15px;')
       br
-      img(src='images/analysis_network_basic_lasso_hist.png')
-
-      h2#space Network: SPACE Results
-      br
-      img(src='images/analysis_network_space.png')
-      br
-      img(src='images/analysis_network_space_hist.png')
+      img(src='images/analysis_network_lasso_hist.png', style='display:inline;')
+      img(src='images/analysis_network_space_hist.png', style='display:inline;')
 
       h2#kmeans Network: K-means Clustering of Regions and Effects
       br
@@ -281,24 +271,28 @@ block content
             th  Test 2 
             th  Test 3 
             th  Test 4 
-            th  Test 5 
             th  Average 
           tr
             td(align='right')  R-squared 
-            td(align='right')  0.83 
-            td(align='right')  0.76 
-            td(align='right')  0.83 
-            td(align='right')  0.82 
-            td(align='right')  0.85 
-            td(align='right')  0.82 
+            td(align='right')  0.62 
+            td(align='right')  0.51 
+            td(align='right')  0.62 
+            td(align='right')  0.53 
+            td(align='right')  0.57 
+          tr
+            td(align='right')  Adjusted R-Squared 
+            td(align='right')  0.71 
+            td(align='right')  0.66 
+            td(align='right')  0.71 
+            td(align='right')  0.67 
+            td(align='right')  0.69 
           tr
             td(align='right')  Mean Squared Error 
-            td(align='right')  0.68 
-            td(align='right')  0.65 
-            td(align='right')  0.66 
-            td(align='right')  0.65 
-            td(align='right')  0.63 
-            td(align='right')  0.66   
+            td(align='right')  0.62 
+            td(align='right')  0.51 
+            td(align='right')  0.62 
+            td(align='right')  0.53 
+            td(align='right')  0.57 
       br
       div.clearfix
 

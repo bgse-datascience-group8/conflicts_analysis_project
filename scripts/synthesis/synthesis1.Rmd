@@ -438,113 +438,20 @@ library(igraph)
 s <- 1
 f <- 99
 lasso.part <- lasso.coeffs.select[s:f,s:f]
-g <- graph.adjacency(lasso.part, weighted=T, mode = 'undirected')
-g <- simplify(g)
-V(g)$label <- colnames(events_by_date_city[s:f,s:f])
-V(g)$degree <- degree(g)
-V(g)$size <- (V(g)$degree)
+g1 <- graph.adjacency(lasso.part, weighted=T, mode = 'undirected')
+g1 <- simplify(g1)
+V(g1)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g1)$label.cex <- (degree(g1) - mean(degree(g1)))/20 + 1
+V(g1)$degree <- degree(g1)
+V(g1)$size <- (V(g1)$degree)
 
 # interactive plot
 #tkplot(g)
 # FIXME: Too clustered together
 layout <- layout.sphere
-autocurve.edges(g)
-
-png(paste0(images_dir,'analysis_network_basic_lasso.png'), bg = "transparent", width=1000, height=1000, units='px')
-plot(g, layout=layout,
-     vertex.label.family = "Helvetica",
-     vertex.label.cex = 1.25,
-     vertex.color='grey')
-dev.off()
-
-png(paste0(images_dir,'analysis_network_basic_lasso_hist.png'), bg = "transparent", width=600, height=400, units='px')
-hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
-dev.off()
-```
-
-[ADD ME: Degree distribution]
-
-```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
-library(ggmap)
-library(grid)
-
-# For every pair of non-zero coeffs
-# add city1.lat, city1.long 
-network <- data.frame(
-  'city.1.name' = character(),
-  'city.1.lat' = numeric(),
-  'city.1.long' = numeric(),
-  'city.2.name' = character(),
-  'city.2.lat' = numeric(),
-  'city.2.long' = numeric(),
-  stringsAsFactors=FALSE)
-
-cities <- data.frame(
-  'city.name' = character(),
-  'city.lat' = numeric(),
-  'city.long' = numeric(),
-  stringsAsFactors=FALSE)
-cities_idx <- 1
-
-for (i in 1:ncol(lasso.coeffs.select)) {
-  city <- colnames(lasso.coeffs.select)[i]
-  neighbors <- names(which(lasso.coeffs[,city] != 0, arr.ind = T))
-  city1.data <- data[data$city==city,][1,]
-  
-  if (!(city %in% cities$city.name)) {
-    cities[cities_idx,] <- c(city,
-      as.numeric(city1.data$latitude),
-      as.numeric(city1.data$longitude))
-    cities_idx <- cities_idx + 1
-  }
-  
-  for (idx in 1:length(neighbors)) {
-    city2 <- neighbors[idx]
-    city2.data <- data[data$city==city2,][1,]
-    new_row <- c(
-      city,
-      as.numeric(city1.data$latitude),
-      as.numeric(city1.data$longitude),
-      city2,
-      as.numeric(city2.data$latitude),
-      as.numeric(city2.data$longitude))
-    network[(i+idx),] <- new_row
-    
-    if (!(city2 %in% cities$city.name)) {
-      cities[cities_idx,] <- c(city2,
-        as.numeric(city2.data$latitude),
-        as.numeric(city2.data$longitude))
-      cities_idx <- cities_idx + 1
-    }
-  }
-}
-
-network <- network[2:nrow(network),]
-nrow(network)
-
-map <- NULL
-mapUS <- borders("state")
-map <- ggplot() + mapUS
-map <- map + 
-  geom_segment(aes(
-    y = as.numeric(network$city.1.lat),
-    x = as.numeric(network$city.1.long),
-    yend = as.numeric(network$city.2.lat),
-    xend = as.numeric(network$city.2.long)),
-    colour = 'steelblue2') +
-  geom_text(data = cities, 
-             aes(x = as.numeric(city.long), y = as.numeric(city.lat), label = city.name), colour = 'royalblue4', vjust = 1, hjust = .8) + theme(panel.background = element_blank())
-
-png(paste0(images_dir,'analysis_network_basic_lasso_map.png'), bg = "transparent", width=1000, height=600, units='px')
-map
-dev.off()
-```
-
-[ADD ME: Calculate statistical significance of lasso.coeffs.select]
+autocurve.edges(g1)
 
 ## Compare with SPACE results
-
-```{r, echo = FALSE, warnings = FALSE, messages = FALSE}
 library(space)
 
 results <- space.joint(as.matrix(events_by_date_city),lam1=300)
@@ -552,25 +459,42 @@ P.hat   <- results$ParCor
 N <- ncol(X)
 A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
 dimnames(A.hat) <- list(colnames(X), colnames(X))
-g <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
-g <- simplify(g)
-V(g)$label <- colnames(events_by_date_city[s:f,s:f])
-V(g)$degree <- degree(g)
-V(g)$size <- V(g)$degree
+g2 <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
+g2 <- simplify(g2)
+V(g2)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g2)$label.cex <- (degree(g2) - mean(degree(g2)))/20 + 1
+V(g2)$degree <- degree(g2) + 1
+V(g2)$size <- V(g2)$degree
 
 # interactive plot
 #tkplot(g)
-layout <- layout.fruchterman.reingold
 
-png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=1000, height=1000, units='px')
-plot(g, layout=layout.sphere,
+png(paste0(images_dir,'analysis_network_lasso.png'), bg = "transparent", width=525, height=525, units='px')
+plot(g1, layout=layout.sphere,
      vertex.label.family = "Helvetica",
-     vertex.label.cex = 1,
-     vertex.color='grey')
+     vertex.label.color = '#333333',
+     vertex.color='lightskyblue1',
+     vertex.frame.color='lightskyblue1',
+     edge.color='lightskyblue1',
+     margin=-0.15)
 dev.off()
 
-png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=600, height=400, units='px')
-hist(V(g)$degree, 30, main='Degree of vertices', xlab='Degree')
+png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=525, height=525, units='px')
+plot(g2, layout=layout.sphere,
+     vertex.label.family = "Helvetica",
+     vertex.label.color = '#333333',
+     vertex.color='lightskyblue1',
+     vertex.frame.color='lightskyblue1',
+     edge.color='lightskyblue1',
+     margin=-0.15)
+dev.off()
+
+png(paste0(images_dir,'analysis_network_lasso_hist.png'), bg = "transparent", width=450, height=300, units='px')
+hist(V(g1)$degree, 30, main='Degree of vertices', xlab='Degree')
+dev.off()
+
+png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=450, height=300, units='px')
+hist(V(g2)$degree, 30, main='Degree of vertices', xlab='Degree')
 dev.off()
 ```
 
@@ -672,7 +596,7 @@ for (i in c('same_region', regions.list)) {
 }
 
 png(paste0(images_dir,'analysis_kluster_region_coeffs_boxplot.png'), bg = "transparent", width=800, height=600, units='px')
-boxplot(region_coeffs, use.cols = TRUE, ylim=c(-0.5,1.5), main = 'Quantiles of Region Effects')
+boxplot(region_coeffs, use.cols = TRUE, ylim=c(-0.5,1.5), main = 'Quantiles of Region Effects Across 100 cities', ylab='Quantiles of coefficients', xlab ='Regions')
 dev.off()
 ```
 
@@ -726,32 +650,60 @@ capture.output(stargazer(m1, m2, align=TRUE, type = 'html', omit.stat=c("f")), f
 
 Cross - validation
 
-```{r}
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 # cross - validate using 5 subsets of the master table
+
+ridge.reg <- function(y, X, lambda) {
+  # here we compute the coefficients for the ridge regression using the 
+  # parameter lambda inputed as third element in the function call. 
+  beta_ridge = solve(t(X)%*%X + diag(lambda, ncol(X)))%*%t(X)%*%y
+  beta_ridge
+}
+
 B <- 5
 blocks <- ceiling( B * (1:nrow(master.table.2)/nrow(master.table.2)))
 
-slices = list()
 models = list()
 r_squareds = c()
+adj_r_squareds = c()
 MSEs = c()
+cond = c()
+
+lambda = 0
 
 for (i in 1:B) {
   
-  slices[[i]] = master.table.2[ blocks == i, ]
-  models[[i]] = lm(data = slices[[i]], log_num_conflicts ~ 0 + .)
-  r_squareds[i] = summary(models[[i]])$r.squared 
-  MSEs[i] = mean(models[[i]]$residuals^2)
+  train = master.table.2[ blocks != i, ]
+  test = master.table.2[ blocks == i, ]
+  
+  # models[[i]] = lm(data = train, log_num_conflicts ~ 0 + .)
+  beta = ridge.reg(as.matrix(train[,1]), as.matrix(train[,-1]), lambda)
+  # prediction = predict(models[[i]], newdata = test)
+  prediction = as.matrix(test[,-1]) %*% beta
+  residuals = ( prediction - test$log_num_conflicts)
+  
+  degrees_freedom = (nrow(test) - 1)/(nrow(test) - (ncol(test)-1) - 1)
+  RSS = sum(residuals^2)
+  TSS = sum((mean(test$log_num_conflicts) - test$log_num_conflicts )^2)
+  r_squareds[i] = 1 - (RSS/TSS)
+  adj_r_squareds[i] = 1 - ( 1 - r_squareds[i])*degrees_freedom
+  MSEs[i] = mean(residuals^2)
+  
+  XX = ( as.matrix(t(train[,-1])) %*% as.matrix(train[,-1]) ) + diag(lambda, ncol(as.matrix(train[,-1])))
+  cond[i] = max(eigen(XX)$values) / min(eigen(XX)$values)
   
 }
 
 r_squareds
+adj_r_squareds
 MSEs
-mrs <- mean(r_squareds)
+mrsqs <- mean(r_squareds)
+marsqs <- mean(adj_r_squareds)
 mmse <- mean(MSEs)
-mat <- matrix(c(r_squareds, mrs, MSEs, mmse), ncol=6, nrow=2, byrow = TRUE)
-colnames <- c(unlist(lapply('Test ', paste0, 1:5)), 'Average')
-rownames <- c('R-squared', 'Mean Squared Error')
+cond
+mat <- matrix(c(r_squareds, mrsqs, MSEs, mmse,adj_r_squareds, marsqs), ncol=5, nrow=3, byrow = TRUE)
+colnames <- c(unlist(lapply('Test ', paste0, 1:4)), 'Average')
+rownames <- c('R-squared', 'Adjusted R-Squared', 'Mean Squared Error')
 dimnames(mat) <- list(rownames, colnames)
 library(xtable)
 mat.table <- xtable(mat)
