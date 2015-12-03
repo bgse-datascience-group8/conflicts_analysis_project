@@ -4,7 +4,12 @@
 2. Ensure port 3000 is open
 3. ssh
 4. `git clone https://github.com/bgse-datascience-group8/conflicts_analysis_project`
-5. `cd cd conflicts_analysis_project/conflict_analysis_app`
-6. [ADD ME] download events json files
+5. `cd conflicts_analysis_project/conflict_analysis_app`
+6. 
+    ```sh
+    wget https://s3-eu-west-1.amazonaws.com/abarciauskas-bgse/events.zip
+    unzip events.zip -d public/javascripts/
+    ```
+
 7. `npm install`
 8. `node app.js`

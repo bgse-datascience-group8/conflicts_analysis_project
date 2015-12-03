@@ -34,26 +34,26 @@ app.get('/about', function (req, res) {
   res.render('about');
 });
 
-var mysql      = require('mysql');
-var connection = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : 'root',
-  database : 'gdelt'
-});
-
-connection.connect();
-
-// connection.query('select * from top_cities limit 1', function(err, rows, fields) {
-//   if (err) throw err;
-//   console.log('The solution is: ', rows[0]);
+// var mysql      = require('mysql');
+// var connection = mysql.createConnection({
+//   host     : 'localhost',
+//   user     : 'root',
+//   password : 'root',
+//   database : 'gdelt'
 // });
 
-connection.end();
+// connection.connect();
 
-var server = app.listen(3000, function () {
-  var host = server.address().address;
-  var port = server.address().port;
+// // connection.query('select * from top_cities limit 1', function(err, rows, fields) {
+// //   if (err) throw err;
+// //   console.log('The solution is: ', rows[0]);
+// // });
 
-  console.log('Example app listening at http://%s:%s', host, port);
-});
+// connection.end();
+
+// var server = app.listen(3000, function () {
+//   var host = server.address().address;
+//   var port = server.address().port;
+
+//   console.log('Example app listening at http://%s:%s', host, port);
+// });
