@@ -60,11 +60,15 @@ This model demonstrated nearly the same level of fit.
 
 <td colspan="2">_Dependent variable:_</td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td colspan="2">log_num_conflicts</td>
+
+<td> </td>
 
 </tr>
 
