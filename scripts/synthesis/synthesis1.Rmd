@@ -638,7 +638,7 @@ master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
 m1 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
 
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population','log_population_sq', 'isWashingtonDC','weekend')]
+master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
 m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
@@ -691,7 +691,6 @@ for (i in 1:B) {
   
   XX = ( as.matrix(t(train[,-1])) %*% as.matrix(train[,-1]) ) + diag(lambda, ncol(as.matrix(train[,-1])))
   cond[i] = max(eigen(XX)$values) / min(eigen(XX)$values)
-  
 }
 
 r_squareds

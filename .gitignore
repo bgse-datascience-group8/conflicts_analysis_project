@@ -3,3 +3,4 @@ npm-debug.log
 node_modules/
 cross-val.html
 summary.html
+eigen-results.txt
