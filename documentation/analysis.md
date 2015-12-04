@@ -100,11 +100,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>-0.056<sup>***</sup></td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.007)</td>
+
+<td> </td>
 
 </tr>
 
@@ -114,11 +118,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>-0.041<sup>***</sup></td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.004)</td>
+
+<td> </td>
 
 </tr>
 
@@ -128,11 +136,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>0.005</td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.006)</td>
+
+<td> </td>
 
 </tr>
 
@@ -142,11 +154,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>0.018<sup>***</sup></td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.006)</td>
+
+<td> </td>
 
 </tr>
 
@@ -156,11 +172,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>0.025<sup>***</sup></td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.005)</td>
+
+<td> </td>
 
 </tr>
 
@@ -170,11 +190,15 @@ This model demonstrated nearly the same level of fit.
 
 <td>0.047<sup>***</sup></td>
 
+<td> </td>
+
 </tr>
 
 <tr>
 
 <td>(0.008)</td>
+
+<td> </td>
 
 </tr>
 

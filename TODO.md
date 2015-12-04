@@ -13,7 +13,7 @@
 * Should we include a quadratic term for the `log.lag_num_conflicts`
 * What other endogenous or exogenous variables might be influencing conflicts? (Try a difference from the estimated effect of lag)
 * Are the results of the auto-correlation effect evidence of intra-city spread? Is there a way to prove this?
-* Significance measures?
+* Include weights for significance.
 
 ### Presentation
 
