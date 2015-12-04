@@ -11,7 +11,7 @@ The analysis in the app is structured as follows:
 
 In the data summary, the subselection of data is detailed and graphs demonstrate the endogenous characterstics of the data. We found that:
 
-* The data is stationary over the period of interest, so it does not need to be standardized over time. It does however demonstrate on a logarithmic scale.
+* The data is stationary over the period of interest, so it does not need to be standardized over time. We use the log of the number of conflicts as our dependent variable.
 * Washington D.C. has a much higher mean than the rest of the data.
 * Weekends have a lower mean than weekdays.
 * Population has a positive and non-linear relationship with number of conflicts.
@@ -22,7 +22,7 @@ To study the question `How does conflict spread?`, the analysis includes a study
 
 #### Auto-Regression
 
-A vector auto-regressive matrix was used to regress 1 to n-days worth of lags. These tests were all found to be highly significant, with the first day's lag having the highest correlation.
+A vector auto-regressive matrix was used to regress 1 to n-days worth of lags. These tests were all found to be highly significant, with the first day's lag having the highest impact. This effect is repeated for every 7 day window that strengthens our belief that time does have a reliable effect.
 
 #### Networks
 
