@@ -642,7 +642,7 @@ master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','l
 master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
 m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
-
+summary(m2)
 #install.packages('stargazer')
 library(stargazer)
 capture.output(stargazer(m1, m2, align=TRUE, type = 'html', omit.stat=c("f")), file = 'summary.html')
