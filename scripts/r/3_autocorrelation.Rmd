@@ -1,0 +1,240 @@
+---
+title: "Conflict Analysis R Scripts 3"
+subtitle: 'Auto-Correlation'
+author: "Aimee Barciauskas, Harihara Subramanyam, Roger Cuscó"
+date: "November 28, 2015"
+output: pdf_document
+---
+
+# Auto-correlation
+
+To analyze auto-correlation the first step is to build a matrix for lag variables.
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+library(reshape2)
+date_by_city_matrix <- data[,c('log_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
+
+epsilon.t <- events_by_date_city
+rownames(epsilon.t) <- epsilon.t$datef
+epsilon.t <- epsilon.t[,setdiff(colnames(epsilon.t), 'datef')]
+total_days <- length(unique(data$datef))
+# Create epsilon.t.master
+# For each feature id in unique feature ids, build it as above,
+# cbind them all into a master matrix
+# regress city day 0 on all columns except those that match '.day0'
+ndays = 14
+cities = colnames(epsilon.t)
+epsilon.t.master = matrix(nrow = total_days-ndays+1)
+
+for (idx in 1:length(cities)) {
+  city <- cities[idx]
+  epsilon.t.city <- embed(c(rep(NA, ndays-1),epsilon.t[,city]), ndays)
+  colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(ndays-1)))
+  colnames(epsilon.t.city) <- colnames # Not that it matters
+  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+}
+
+epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+```
+
+## Example: Auto-correlation for a single city: Boston
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+boston <- epsilon.t.master[,c('Boston, MA.day0','Boston, MA.day1')]
+y <- boston[,1]
+X <- cbind(rep(1, nrow(boston)), boston[,2])
+X <- cbind(X, X[,2]**2)
+m <- lm(y ~ 0+X)
+summary(m)
+least_sqrs_beta <- my.lm(y,X)
+# Compare with: model <- lm(y ~ 0+X)
+least_sqrs_beta.fitted <- X %*% least_sqrs_beta
+# Compare least_sqrs_beta.fitted with fitted.values(model)
+
+least_sqrs_beta.residuals <- y - least_sqrs_beta.fitted
+
+boston.df <- data.frame(boston[,1], least_sqrs_beta.fitted, least_sqrs_beta.residuals)
+colnames(boston.df) <- c('actual','fitted','residuals')
+
+p1 <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, MA.day0`)) +
+  geom_point(colour=rcolors[sample(1:11, 1)]) + 
+  geom_line(aes(y=least_sqrs_beta.fitted), colour=rcolors[sample(1:11, 1)], size=1.5) +
+  theme(panel.background = element_blank())
+
+p2 <- ggplot(boston.df, aes(x=X[,2], y=least_sqrs_beta.residuals)) +
+  geom_point(colour=rcolors[sample(1:11, 1)]) +
+  theme(panel.background = element_blank()) +
+  xlab('Lag') +
+  ggtitle('1-day Lag vs Residuals')
+
+png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=1200, height=600, units='px')
+multiplot(p1, p2, cols=2)
+dev.off()
+```
+
+Evaluate auto-correlation by the nth-day lagged.
+
+12 days selected for best effect-dropoff. We observed some cities had coefficients of near 1 for all n-days of lag, evidence of non-stationarity for those cities. Below we account for this by using a standardized form of the number of conflicts.
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+ndays <- 12
+# coeffs matrix is ndays x ncities so we can plot the average coeff for each nday regression
+coeffs <- matrix(nrow = ndays+1, ncol =length(unique(data$city)))
+rownames(coeffs) <- 0:ndays
+colnames(coeffs) <- cities
+
+# Reconstruct epsilon.t.master for the specific lag
+for (i in 2:ndays) {
+  nday <- i
+  epsilon.t.master = matrix(nrow = total_days-nday+1)
+  
+  for (idx in 1:length(cities)) {
+    city <- cities[idx]
+    epsilon.t.city <- embed(c(rep(NA, nday-1),epsilon.t[,city]), nday)
+    colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(nday-1)))
+    colnames(epsilon.t.city) <- colnames # Not that it matters
+    epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[nday:nrow(epsilon.t.city),])
+  }
+  
+  epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+  
+  current_indx <- 1
+  model_indx <- 1
+  
+  while (current_indx < ncol(epsilon.t.master)) {
+    # SELECT COLUMNS FOR CITY
+    cols_for_regression <- epsilon.t.master[,c(current_indx, (current_indx+nday-1))]
+  
+    # RUN MODEL
+    beta <- my.lm(cols_for_regression[,1], cols_for_regression[,2])
+
+    # COEFFS TO MATRIX
+    coeffs[nday,model_indx] = beta
+                            
+    # INCREMENT INDEX
+    current_indx <- current_indx + nday
+    model_indx <- model_indx + 1
+  }
+}
+
+coeffs <- coeffs[2:(nrow(coeffs)-1),]
+lag_mean_eff <- rowMeans(coeffs)
+
+dat.m <- melt(coeffs, id.vars = "value")
+plot1 <- ggplot(dat.m, aes(X1, value, color=factor(X2))) +
+  geom_line(aes(group=X2)) + 
+  theme(legend.position='none', panel.background = element_blank()) +
+  ylab('Coefficient') + xlab('N-th day lag') +
+  ggtitle('Coefficient of Nth-day Lag for All Cities')
+
+dat.m <- melt(coeffs, id.vars = "group")
+plot2 <- ggplot(dat.m, aes(factor(X1), value)) + 
+  geom_boxplot() +
+  theme(panel.background = element_blank()) +
+  xlab('N-th Day Lag') +
+  ylab('Coefficient Quantiles') +
+  ggtitle('N-th Day Lag Quantiles for All Cities')
+
+```
+
+## Regress on differences from mean for given date
+
+We found that for many cities, the coefficient for the nth-day lag was near 1, demonstrating non-stationarity. Using the standardized form of the data relieves the non-stationarity observed in some cities.
+
+```{r}
+library(reshape2)
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+
+epsilon.t <- events_by_date_city
+rownames(epsilon.t) <- epsilon.t$datef
+epsilon.t <- epsilon.t[,setdiff(colnames(epsilon.t), 'datef')]
+total_days <- length(unique(data$datef))
+# Create epsilon.t.master
+# For each feature id in unique feature ids, build it as above,
+# cbind them all into a master matrix
+# regress city day 0 on all columns except those that match '.day0'
+ndays = 14
+cities = colnames(epsilon.t)
+epsilon.t.master = matrix(nrow = total_days-ndays+1)
+
+for (idx in 1:length(cities)) {
+  city <- cities[idx]
+  epsilon.t.city <- embed(c(rep(NA, ndays-1),epsilon.t[,city]), ndays)
+  colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(ndays-1)))
+  colnames(epsilon.t.city) <- colnames # Not that it matters
+  epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[ndays:nrow(epsilon.t.city),])
+}
+
+epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+
+
+ndays <- 12
+# coeffs matrix is ndays x ncities so we can plot the average coeff for each nday regression
+coeffs <- matrix(nrow = ndays+1, ncol =length(unique(data$city)))
+rownames(coeffs) <- 0:ndays
+colnames(coeffs) <- cities
+
+# Reconstruct epsilon.t.master for the specific lag
+for (i in 2:ndays) {
+  nday <- i
+  epsilon.t.master = matrix(nrow = total_days-nday+1)
+  
+  for (idx in 1:length(cities)) {
+    city <- cities[idx]
+    epsilon.t.city <- embed(c(rep(NA, nday-1),epsilon.t[,city]), nday)
+    colnames <- as.character(sapply(paste0(city, '.day'), paste0, 0:(nday-1)))
+    colnames(epsilon.t.city) <- colnames # Not that it matters
+    epsilon.t.master <- cbind(epsilon.t.master, epsilon.t.city[nday:nrow(epsilon.t.city),])
+  }
+  
+  epsilon.t.master <- epsilon.t.master[,2:ncol(epsilon.t.master)]
+  
+  current_indx <- 1
+  model_indx <- 1
+  
+  while (current_indx < ncol(epsilon.t.master)) {
+    # SELECT COLUMNS FOR CITY
+    cols_for_regression <- epsilon.t.master[,c(current_indx, (current_indx+nday-1))]
+  
+    # RUN MODEL
+    beta <- my.lm(cols_for_regression[,1], cols_for_regression[,2])
+
+    # ADD COEFFS TO MATRIX
+    coeffs[nday,model_indx] = beta
+                            
+    # INCREMENT INDEX
+    current_indx <- current_indx + nday
+    model_indx <- model_indx + 1
+  }
+}
+
+coeffs <- coeffs[2:(nrow(coeffs)-1),]
+lag_mean_eff <- rowMeans(coeffs)
+
+dat.m <- melt(coeffs, id.vars = "value")
+plot1 <- ggplot(dat.m, aes(X1, value, color=factor(X2))) +
+  geom_line(aes(group=X2)) + 
+  theme(panel.background = element_blank(), legend.position = 'none') +
+  ylab('Coefficient') + xlab('N-th day lag') +
+  ggtitle('Coefficient of Nth-day Lag for All Cities')
+
+dat.m <- melt(coeffs, id.vars = "group")
+plot2 <- ggplot(dat.m, aes(factor(X1), value)) + 
+  geom_boxplot() +
+  theme(panel.background = element_blank()) +
+  xlab('N-th Day Lag') +
+  ylab('Coefficient Quantiles') +
+  ggtitle('N-th Day Lag Quantiles for All Cities')
+
+png(paste0(images_dir,'analysis_lag_all_cities.png'), bg = "transparent", width=1200, height=600, units='px')
+multiplot(plot1,plot2,cols=2)
+dev.off()
+```
+
+Washington, D.C. agains stands out as having the most non-stationarity data. Even when standardized by date it is has a coefficient near 1 - this could perhaps be an interesting case study in how the growth in the number of conflicts in Washington, D.C. notably outpaces all other cities.

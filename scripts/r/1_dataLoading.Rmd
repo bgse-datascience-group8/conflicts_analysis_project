@@ -1,0 +1,111 @@
+---
+title: "Conflict Analysis R Scripts 1"
+subtitle: 'Data Loading and Standardization'
+author: "Aimee Barciauskas, Harihara Subramanyam, Roger Cuscó"
+date: "November 28, 2015"
+output: pdf_document
+---
+
+## Data sub-selection by numbers:
+
+* Created the table `city_day_event_counts_plus` (see database.md) which is table of number of conflict events per day per city in the U.S. between April 2013 and November 6, 2015.
+* Started with 2,018 cities having conflicts since 2013, with a total of 1,507,041 events.
+* Removed cities in Alaska and Hawaii
+* Sub-select to 100 cities with the most data:
+    * Summed the number of days per city represented, took the top 100
+    * 82% of conflicts are represented by these top 100 cities
+    * See `top_cities.sql`
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+library(RMySQL)
+library(reshape)
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+setwd('~/Box Sync/abarciausksas/myfiles/conflicts_analysis_project/')
+images_dir <- 'conflict_analysis_app/public/images/'
+rcolors <- brewer.pal(11, 'Spectral')
+source('scripts/r/helpers.R')
+theme_set(theme_gray(base_size = 18))
+
+con <- dbConnect(RMySQL::MySQL(), user="root", password="root", dbname = "gdelt")
+
+res <- dbSendQuery(con, "select * from top_cities where sqldate > 20130701")
+data <- dbFetch(res, n = -1)
+
+# Standard data formatting
+data$datef <- as.Date(as.character(data$sqldate), format = '%Y%m%d')
+data$city <- paste0(data$name, ', ', data$admin1_code)
+data$city <- factor(data$city)
+data$population <- as.numeric(data$population)
+```
+
+# Data standardization
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+day_means <- tapply(data$num_conflicts, data$sqldate, FUN=mean)
+day_means <- cbind(as.matrix(day_means), as.numeric(row.names(day_means)))
+colnames(day_means) <- c('date_mean','sqldate')
+
+day_sds <- tapply(data$num_conflicts, data$sqldate, FUN=sd)
+day_sds <- cbind(as.matrix(day_sds), as.numeric(row.names(day_sds)))
+colnames(day_sds) <- c('date_sd','sqldate')
+
+data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
+data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
+
+data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
+```
+
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+#install.packages('Rmisc')
+library(Rmisc)
+
+plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_line() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
+
+plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_line() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
+
+plot3 <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city)) + geom_line() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
+
+png(paste0(images_dir,'summary_num_conflicts_raw.png'), bg = "transparent", width=1200, height=400, units='px')
+multiplot(plot1, plot2, plot3, cols=3)
+dev.off()
+```
+
+It's very noisy so we simplify the charts...
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+plot1 <- ggplot(data = data, aes(x = datef, y = num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',100)) +
+  theme(legend.position = "none",
+        panel.background = element_blank())
+
+plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',100)) +
+  theme(legend.position = "none",
+        panel.background = element_blank())
+
+plot3 <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city)) + geom_smooth(method="loess", se=FALSE) + 
+  scale_colour_manual(values=rep('#56B4E9',100)) +
+  theme(legend.position = "none",
+        panel.background = element_blank())
+
+png(paste0(images_dir,'summary_num_conflicts_smooth.png'), bg = "transparent", width=1200, height=400, units='px')
+multiplot(plot1, plot2, plot3, cols=3)
+dev.off()
+```
+But added a log(num_conflicts) column given data looks mostly stationary.
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+data$log_num_conflicts <- log(data$num_conflicts)
+```

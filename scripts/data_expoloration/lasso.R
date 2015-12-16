@@ -1,12 +1,14 @@
+library(MASS)
 lasso.reg <- function(y, X, lambda) {
   max.iter <- 20
   P <- ncol(X)
   
-  beta <- solve(t(X)%*%X, t(X)%*%y)
+  beta <- ginv(t(X)%*%X, t(X)%*%y)
   beta.prev <- beta
   
   # Do until convergence
   for (iter in 1:max.iter) {
+    print(paste0('iter: ', iter))
     for (k in 1:P) {
       y.minus_k <- y - X[,setdiff(1:P,k)] %*% beta[setdiff(1:P,k)]
       x.k <- X[,k]

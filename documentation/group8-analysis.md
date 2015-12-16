@@ -30,7 +30,7 @@ A vector auto-regressive matrix was used to regress 1 to n-days worth of lags. T
 
 Basic Lasso and the SPACE algorithm were used to explore the partial correlation across cities. Both algorithms exposed cities with a greater number of correlations across the set, and these 'high-influence' cities were often represented in the results of both algorithms. However, SPACE resulted in a power law distribution of the degree of edges and basic lasso did not. There is a natural expectation of a "hub" phenomena in partial correlation analysis that suggests the result of the SPACE algorithm is more realistic.
 
-[TODO] With the sparse matrix of correlation coefficents, we will regress for the R-squared of each city given it's individual network.
+[TODO] With the resulting sparse matrix, each city's individual network will be estimated for goodness-of-fit to understand how well the city's network explains its level of conflict.
 
 Using a k-means algorithm, the data was clustered into regions. This clustering method was used as a proxy to study the effect of distance between cities. That is, cities which are in the same region as city x are closer to city x and thus we might expect a higher correlation with what happens in the same region than in other regions.
 

@@ -1,0 +1,267 @@
+---
+title: "Conflict Analysis R Scripts 3"
+subtitle: 'Auto-Correlation'
+author: "Aimee Barciauskas, Harihara Subramanyam, Roger Cuscó"
+date: "November 28, 2015"
+output: pdf_document
+---
+
+## Neighbors correlation
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+library(lattice)
+library(reshape2)
+date_by_city_matrix <- data[,c('log_num_conflicts','datef','city')]
+
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
+
+# Sanity check
+# head(events_by_date_city[,'Tulsa, OK'], n = 20)
+# head(data[data$city == 'Tulsa, OK',][,c('std_num_conflicts','datef')], n = 10)
+
+# Make date column rownames
+rownames(events_by_date_city) <- events_by_date_city$datef
+events_by_date_city <- events_by_date_city[,setdiff(colnames(events_by_date_city), 'datef')]
+
+X <- events_by_date_city
+
+### HELPER FUNCTIONS
+my.cov <- function(X) {
+  n <- nrow(X)
+  d <- data.frame(mean = colMeans(X))
+  means <- t(do.call("cbind", replicate(n, d, simplify = FALSE)))
+  diff_matrix <- as.matrix(X - means)
+  1/(n-1) * t(diff_matrix) %*% diff_matrix
+}
+my.cor <- function(X) {
+  cov.matrix <- my.cov(X)
+  # expect a square matrix
+  cor.matrix <- matrix(0, nrow = nrow(cov.matrix), ncol = nrow(cov.matrix))
+  for (i in 1:ncol(cov.matrix)) {
+    for (j in 1:nrow(cov.matrix)) {
+      cor.matrix[i,j] <- cov.matrix[i,j]/(sqrt(cov.matrix[i,i])*sqrt(cov.matrix[j,j]))
+    }
+  }
+  cor.matrix
+}
+
+X.cor <- my.cor(X)
+X.m <- melt(X.cor)
+
+library(corrplot)
+png(paste0(images_dir,'analysis_network_heatmap.png'), bg = "transparent", width=600, height=600, units='px')
+corrplot(X.cor,method = "color", tl.cex = 0.01)
+dev.off()
+```
+
+## Neighborhoods
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+source('scripts/data_expoloration/lasso.R')
+X <- events_by_date_city
+# for every column of X, want to run lasso on all other columns
+# update coeff matrix, should be pxp
+lasso.coeffs <- matrix(0, ncol=ncol(X), nrow = ncol(X))
+rownames(lasso.coeffs) <- colnames(X)
+colnames(lasso.coeffs) <- colnames(X)
+for (i in 1:ncol(X)) {
+  city <- colnames(X)[i]
+  y <- as.numeric(X[,city])
+  Xmat <- as.matrix(X[,setdiff(1:ncol(X), i)])
+  model <- lm(y ~ Xmat)
+  # When using a z-score, this was up to 5000
+  coeffs <- lasso.reg(y, Xmat, 100)
+  lasso.coeffs[city,setdiff(1:ncol(lasso.coeffs),i)] <- as.numeric(coeffs)
+}
+
+lasso.coeffs.select <- lasso.coeffs
+# Remove them if they don't like each other (e.g. negative or 0 correlation)
+for (i in 1:ncol(lasso.coeffs)) {
+  for (j in 1:ncol(lasso.coeffs)) {
+    if ((lasso.coeffs[i,j] <= 0.02) || (lasso.coeffs[j,i] <= 0.02)) {
+      lasso.coeffs.select[i,j] = 0
+      lasso.coeffs.select[j,i] = 0
+    }
+  }
+}
+```
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+#install.packages("igraph")
+
+## Load package
+library(igraph)
+
+g1 <- graph.adjacency(lasso.coeffs.select, weighted=T, mode = 'undirected')
+g1 <- simplify(g1)
+V(g1)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g1)$label.cex <- (degree(g1) - mean(degree(g1)))/20 + 1
+V(g1)$degree <- degree(g1)
+V(g1)$size <- (V(g1)$degree)
+
+# interactive plot
+#tkplot(g)
+layout <- layout.sphere
+autocurve.edges(g1)
+
+## Compare with SPACE results
+library(space)
+
+results <- space.joint(as.matrix(events_by_date_city),lam1=300)
+P.hat   <- results$ParCor
+N <- ncol(X)
+A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
+dimnames(A.hat) <- list(colnames(X), colnames(X))
+g2 <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
+g2 <- simplify(g2)
+V(g2)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g2)$label.cex <- (degree(g2) - mean(degree(g2)))/20 + 1
+V(g2)$degree <- degree(g2) + 1
+V(g2)$size <- V(g2)$degree
+
+# interactive plot
+#tkplot(g)
+
+png(paste0(images_dir,'analysis_network_lasso.png'), bg = "transparent", width=525, height=525, units='px')
+plot(g1, layout=layout.sphere,
+     vertex.label.family = "Helvetica",
+     vertex.label.color = '#333333',
+     vertex.color='lightskyblue1',
+     vertex.frame.color='lightskyblue1',
+     edge.color='lightskyblue1',
+     margin=-0.15)
+dev.off()
+
+png(paste0(images_dir,'analysis_network_space.png'), bg = "transparent", width=525, height=525, units='px')
+plot(g2, layout=layout.sphere,
+     vertex.label.family = "Helvetica",
+     vertex.label.color = '#333333',
+     vertex.color='lightskyblue1',
+     vertex.frame.color='lightskyblue1',
+     edge.color='lightskyblue1',
+     margin=-0.15)
+dev.off()
+
+png(paste0(images_dir,'analysis_network_lasso_hist.png'), bg = "transparent", width=450, height=300, units='px')
+hist(V(g1)$degree, 30, main='Degree of vertices', xlab='Degree')
+dev.off()
+
+png(paste0(images_dir,'analysis_network_space_hist.png'), bg = "transparent", width=450, height=300, units='px')
+hist(V(g2)$degree, 30, main='Degree of vertices', xlab='Degree')
+dev.off()
+```
+
+## Analyze fit
+
+```{r}
+dimnames(P.hat) <- list(cities,cities)
+# to analyze boston we want to regress only the columnts of events_by_date_city which space has selected
+A.hat.boston <- as.matrix(events_by_date_city) %*% diag(A.hat[,'Boston, MA'])
+colnames(A.hat.boston) <- cities
+# Regress boston on all other cities
+A.hat.boston.df <- as.data.frame(A.hat.boston)
+library(R.utils)
+A.hat.boston.df <- A.hat.boston.df[, colSums(isZero(A.hat.boston.df)) != nrow(A.hat.boston.df)]
+A.hat.boston.df <- cbind(A.hat.boston.df, boston = events_by_date_city[,'Boston, MA'])
+head(A.hat.boston.df)
+model <- lm(`boston` ~ ., A.hat.boston.df)
+```
+
+### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
+# get the regions using k-means
+cities <- data[,c('city','latitude','longitude')]
+cities <- unique(cities)
+
+X <- as.matrix(cities[,c('longitude','latitude')])
+
+nclusters <- 5
+# FIXME: K-means is not clustering as well horizontally
+source('scripts/synthesis/kmeansGdist.R')
+res <- k.means(X, nclusters)
+r.nks <- res$r.nks
+colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)
+cities <- cbind(cities, r.nks)
+
+regions <- factor(apply(cities, 1, function(x) which(x == 1)), 
+                    labels = colnames(cities)[4:(nclusters+4-1)]) 
+cities <- cbind(cities, regions)
+regions.list <- sort(as.character(unique(regions)))
+
+library(ggmap)
+
+map <- NULL
+mapUS <- borders("state")
+map <- ggplot() + mapUS
+map <- map + 
+  geom_text(data = cities, 
+             aes(x = longitude, y = latitude, label = city, colour = regions), size = 5, vjust = .5, hjust = .8) +
+  theme(panel.background = element_blank())
+
+png(paste0(images_dir,'analysis_kluster_map.png'), bg = "transparent", width=1000, height=600, units='px')
+map
+dev.off()
+
+# Matrix of coefficients for region effects for each city
+# ncities x nregions + 1 (same region)
+region_coeffs <- matrix(nrow=nrow(cities), ncol=length(regions.list)+1)
+dimnames(region_coeffs) <- list(unique(cities$city), c('same_region', regions.list))
+
+region_day_avgs_mat <- matrix(nrow=nrow(events_by_date_city), ncol=length(regions.list)+3)
+dimnames(region_day_avgs_mat) <- list(1:nrow(events_by_date_city), c('datef','city','same_region', regions.list))
+
+# for every city, calculate avg same_region and avg_other_regions
+# doing counts so using glm - poisson
+for (i in 1:nrow(cities)) {
+  city <- cities[i,]
+  region <- city$regions
+  same_region_cities <- setdiff(cities[cities$regions == region,]$city, city$city)
+  day_avgs_same_region <- rowMeans(events_by_date_city[,same_region_cities])
+
+  region_avgs <- list()
+  region_avgs[['same_region']] = day_avgs_same_region
+  # get averages for other regions
+  for (ridx in 1:length(regions.list)) {
+    c_region <- regions.list[ridx]
+    if (!c_region == as.character(region)) {
+      c_region_cities <- cities[cities$regions == c_region,]
+      avg_c_region <- rowMeans(events_by_date_city[,as.character(c_region_cities$city)])
+      region_avgs[[c_region]] <- avg_c_region
+    } else {
+      region_avgs[[c_region]] <- 0
+    }
+  }
+  
+  region_avgs_df <- as.matrix(as.data.frame(region_avgs))
+  city_name <- toString(city$city)
+  rad <- cbind(rep(city_name, nrow(region_avgs_df)), region_avgs_df)
+  rad <- cbind(unique(as.character(data$datef)), rad)
+  
+  region_day_avgs_mat <- rbind(region_day_avgs_mat, rad) 
+
+  model <- lm(events_by_date_city[,as.character(city$city)] ~ 0+region_avgs_df)
+  coeffs <- coefficients(model)
+  names(coeffs) <- lapply(names(coeffs), function(n) { gsub("region_avgs_df", "", n) })
+
+  for (ridx in 1:length(regions.list)) {
+    c_region <- regions.list[ridx]
+    region_coeffs[as.character(city$city),c_region] = coeffs[c_region]
+  }
+  region_coeffs[as.character(city$city),'same_region'] = coeffs['same_region']
+}
+
+
+final <- region_day_avgs_mat[!(is.na(region_day_avgs_mat[,'same_region'])),]
+final <- as.data.frame(final, stringsAsFactors=FALSE)
+final$city <- factor(final$city)
+final$datef <- as.Date(as.character(final$datef), format = '%Y-%m-%d')
+for (i in c('same_region', regions.list)) {
+  final[,i] <- as.numeric(final[,i])
+}
+
+png(paste0(images_dir,'analysis_kluster_region_coeffs_boxplot.png'), bg = "transparent", width=800, height=600, units='px')
+boxplot(region_coeffs, use.cols = TRUE, ylim=c(-0.5,1.5), main = 'Quantiles of Region Effects Across 100 cities', ylab='Quantiles of coefficients', xlab ='Regions')
+dev.off()
+```

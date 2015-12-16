@@ -1,0 +1,66 @@
+---
+title: "Conflict Analysis R Scripts 2"
+subtitle: 'Basic Trends'
+author: "Aimee Barciauskas, Harihara Subramanyam, Roger Cuscó"
+date: "November 28, 2015"
+output: pdf_document
+---
+
+## Weekly trends
+
+```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
+library(dplyr)
+#create a vector of weekdays
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+
+data$wday <- factor((weekdays(data$datef) %in% weekdays1), 
+         levels=c(FALSE, TRUE), labels=c('weekend', 'weekday'))
+
+start_date <- as.Date('20150901', format = '%Y%m%d')
+end_date <- as.Date('20151031', format = '%Y%m%d')
+
+fall2015 <- subset(data, datef > start_date & datef < end_date)
+
+fall2015.sums <- aggregate(fall2015$num_conflicts, by=list(date=fall2015$datef,wday=fall2015$wday), FUN=sum)
+
+plot <- ggplot(data = fall2015.sums, aes(y = x, x = date, fill=wday)) + 
+  geom_bar(stat='identity') + 
+  scale_fill_manual(values=c("#E69F00", "#56B4E9")) + 
+  xlab("Date") + 
+  ylab("Number of Conflicts") + 
+  theme(panel.background = element_blank())
+  ggtitle("Number of Conflicts by Day (Fall 2015)")
+
+png(paste0(images_dir,'summary_weekly_trends.png'), bg = "transparent", width=800, height=400, units='px')
+plot
+dev.off()
+```
+
+We want to know is there a relationship between population and num of conflicts (seems very likely!)
+
+```{r, echo = FALSE, warnings = FALSE, messages=FALSE}
+city_means <- tapply(data$num_conflicts, data$city, FUN=mean)
+city_means <- cbind(as.data.frame(city_means), row.names(city_means))
+colnames(city_means) <- c('city_mean','city')
+
+data <- merge(data, city_means, by = 'city', all.x = TRUE)
+
+data$log_population <- log(data$population)
+data$log_population_sq <- data$log_population**2
+
+m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
+
+p1 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
+  geom_point() + 
+  theme(legend.position='none', panel.background = element_blank()) +
+  ggtitle('City Log Population v Avg Log Number of Conflicts')
+p2 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
+  geom_point() + 
+  geom_line(aes(y=fitted.values(m)), color='darkgrey', size=1.5) +
+  theme(legend.position='none', panel.background = element_blank()) +
+  ggtitle('Plus Regression Line')
+
+png(paste0(images_dir,'summary_population.png'), bg = "transparent", width=1200, height=600, units='px')
+multiplot(p1,p2,cols=2)
+dev.off()
+```
