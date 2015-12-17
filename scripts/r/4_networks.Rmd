@@ -155,17 +155,38 @@ dev.off()
 ## Analyze fit
 
 ```{r}
-dimnames(P.hat) <- list(cities,cities)
-# to analyze boston we want to regress only the columnts of events_by_date_city which space has selected
-A.hat.boston <- as.matrix(events_by_date_city) %*% diag(A.hat[,'Boston, MA'])
-colnames(A.hat.boston) <- cities
-# Regress boston on all other cities
-A.hat.boston.df <- as.data.frame(A.hat.boston)
 library(R.utils)
-A.hat.boston.df <- A.hat.boston.df[, colSums(isZero(A.hat.boston.df)) != nrow(A.hat.boston.df)]
-A.hat.boston.df <- cbind(A.hat.boston.df, boston = events_by_date_city[,'Boston, MA'])
-head(A.hat.boston.df)
-model <- lm(`boston` ~ ., A.hat.boston.df)
+# Do this analysis on log vs stdzed data is much much different in terms of fit.
+# If you use log_num_conflicts instead you can get r-squareds of 0.5+ (0.71 for Washington D.C.)
+# so it seems the initial assumption of non-stationarity was wrong wrong
+
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
+# fun aggregate needed as some cells are not represented -> 0
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
+# Make date column rownames
+rownames(events_by_date_city) <- events_by_date_city$datef
+events_by_date_city <- events_by_date_city[,setdiff(colnames(events_by_date_city), 'datef')]
+
+# Store results from each regression
+A.hat.results <- cbind(A.hat, rsquared = rep(0, nrow(A.hat)))
+
+for (i in 1:ncol(A.hat)) {
+  city.name <- colnames(A.hat)[i]
+  A.hat.city <- as.matrix(events_by_date_city) %*% diag(A.hat[,city.name])
+  colnames(A.hat.city) <- cities
+  
+  A.hat.city.df <- as.data.frame(A.hat.city)
+  
+  A.hat.city.df <- A.hat.city.df[, colSums(isZero(A.hat.city.df)) != nrow(A.hat.city.df)]
+  A.hat.city.df <- cbind(A.hat.city.df, city = events_by_date_city[,city.name])
+  A.hat.city.df <- as.matrix(A.hat.city.df)
+  
+  model <- lm(city ~ ., as.data.frame(A.hat.city.df))
+  RSS = sum(residuals(model)**2)
+  TSS = sum((mean(A.hat.city.df[,'city']) - A.hat.city.df[,'city'])**2)
+  rsquared = 1 - (RSS/TSS)
+  A.hat.results[city.name,'rsquared'] = rsquared
+}
 ```
 
 ### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
