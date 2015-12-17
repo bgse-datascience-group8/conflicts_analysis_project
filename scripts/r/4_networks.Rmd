@@ -8,13 +8,15 @@ output: pdf_document
 
 ## Neighbors correlation
 
+For analysis of networks, we use the standardized form of the number of conflicts. The first pass used the log number of conflicts, however this also demonstrated suspicious levels of fit.
+
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
 library(lattice)
 library(reshape2)
-date_by_city_matrix <- data[,c('log_num_conflicts','datef','city')]
+date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
 
 # fun aggregate needed as some cells are not represented -> 0
-events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
+events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
 
 # Sanity check
 # head(events_by_date_city[,'Tulsa, OK'], n = 20)
@@ -95,7 +97,7 @@ library(igraph)
 
 g1 <- graph.adjacency(lasso.coeffs.select, weighted=T, mode = 'undirected')
 g1 <- simplify(g1)
-V(g1)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g1)$label <- colnames(events_by_date_city)
 V(g1)$label.cex <- (degree(g1) - mean(degree(g1)))/20 + 1
 V(g1)$degree <- degree(g1)
 V(g1)$size <- (V(g1)$degree)
@@ -107,15 +109,15 @@ autocurve.edges(g1)
 
 ## Compare with SPACE results
 library(space)
-
-results <- space.joint(as.matrix(events_by_date_city),lam1=300)
+# Choice of lambda was largely trial and error until a reasonable result.
+results <- space.joint(as.matrix(events_by_date_city),lam1=10)
 P.hat   <- results$ParCor
 N <- ncol(X)
 A.hat   <- 1*( P.hat != 0 ) - diag(rep(1,N))
 dimnames(A.hat) <- list(colnames(X), colnames(X))
 g2 <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
 g2 <- simplify(g2)
-V(g2)$label <- colnames(events_by_date_city[s:f,s:f])
+V(g2)$label <- colnames(events_by_date_city)
 V(g2)$label.cex <- (degree(g2) - mean(degree(g2)))/20 + 1
 V(g2)$degree <- degree(g2) + 1
 V(g2)$size <- V(g2)$degree
@@ -156,16 +158,6 @@ dev.off()
 
 ```{r}
 library(R.utils)
-# Do this analysis on log vs stdzed data is much much different in terms of fit.
-# If you use log_num_conflicts instead you can get r-squareds of 0.5+ (0.71 for Washington D.C.)
-# so it seems the initial assumption of non-stationarity was wrong wrong
-
-date_by_city_matrix <- data[,c('std_num_conflicts','datef','city')]
-# fun aggregate needed as some cells are not represented -> 0
-events_by_date_city <- dcast(data = date_by_city_matrix, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
-# Make date column rownames
-rownames(events_by_date_city) <- events_by_date_city$datef
-events_by_date_city <- events_by_date_city[,setdiff(colnames(events_by_date_city), 'datef')]
 
 # Store results from each regression
 A.hat.results <- cbind(A.hat, rsquared = rep(0, nrow(A.hat)))
@@ -189,6 +181,33 @@ for (i in 1:ncol(A.hat)) {
 }
 ```
 
+Below, we create data for map visualization - e.g. city-city pairs with lat-long.
+
+```{r}
+cities <- data[,c('city','latitude','longitude')]
+cities <- unique(cities)
+rownames(cities) <- cities$city
+map.data <- melt(A.hat)
+map.data <- subset(map.data, !(value == 0))
+map.data <- cbind(map.data,
+                  rsquared = rep(0, nrow(map.data)),
+                  latitude = rep(0, nrow(map.data)),
+                  longitude = rep(0, nrow(map.data)))
+
+
+# Add r-squared based on X1
+# This is dumb but can't find a better way...
+for (i in 1:nrow(map.data)) {
+  city <- as.character(map.data[i,'X1'])
+  map.data[i,'rsquared'] <- A.hat.results[city,'rsquared']
+  map.data[i,'latitude'] <- cities[city,'latitude']
+  map.data[i,'longitude'] <- cities[city,'longitude']
+}
+
+write.csv(map.data, file = 'networks.csv', row.names = FALSE)
+```
+
+
 ### Evalute std_num_conflicts v. avg:same_region + avg:other_regions
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE }
@@ -200,7 +219,7 @@ X <- as.matrix(cities[,c('longitude','latitude')])
 
 nclusters <- 5
 # FIXME: K-means is not clustering as well horizontally
-source('scripts/synthesis/kmeansGdist.R')
+source('scripts/r/kmeansGdist.R')
 res <- k.means(X, nclusters)
 r.nks <- res$r.nks
 colnames(r.nks) <- sapply('region.', paste0, 1:nclusters)

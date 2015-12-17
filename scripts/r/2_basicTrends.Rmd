@@ -39,7 +39,7 @@ dev.off()
 We want to know is there a relationship between population and num of conflicts (seems very likely!)
 
 ```{r, echo = FALSE, warnings = FALSE, messages=FALSE}
-city_means <- tapply(data$num_conflicts, data$city, FUN=mean)
+city_means <- tapply(data$std_num_conflicts, data$city, FUN=mean)
 city_means <- cbind(as.data.frame(city_means), row.names(city_means))
 colnames(city_means) <- c('city_mean','city')
 
@@ -48,13 +48,13 @@ data <- merge(data, city_means, by = 'city', all.x = TRUE)
 data$log_population <- log(data$population)
 data$log_population_sq <- data$log_population**2
 
-m <- lm(log(data$city_mean) ~ data$log_population + data$log_population_sq)
+m <- lm(data$city_mean.y ~ data$log_population + data$log_population_sq)
 
-p1 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
+p1 <- ggplot(data, aes(x=log_population, y = city_mean.y, color=city)) +
   geom_point() + 
   theme(legend.position='none', panel.background = element_blank()) +
   ggtitle('City Log Population v Avg Log Number of Conflicts')
-p2 <- ggplot(data, aes(x=log(population), y = log(city_mean), color=city)) +
+p2 <- ggplot(data, aes(x=log_population, y = city_mean.y, color=city)) +
   geom_point() + 
   geom_line(aes(y=fitted.values(m)), color='darkgrey', size=1.5) +
   theme(legend.position='none', panel.background = element_blank()) +

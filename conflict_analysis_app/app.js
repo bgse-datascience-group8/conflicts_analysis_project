@@ -18,6 +18,10 @@ app.get('/map', function (req, res) {
   res.render('map');
 });
 
+app.get('/network', function (req, res) {
+  res.render('network');
+});
+
 app.get('/summary', function (req, res) {
   res.render('summary');
 });

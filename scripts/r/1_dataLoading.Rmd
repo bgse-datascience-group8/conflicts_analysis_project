@@ -55,6 +55,7 @@ data <- merge(data, day_means, by = 'sqldate', all.x = TRUE)
 data <- merge(data, day_sds, by = 'sqldate', all.x = TRUE)
 
 data$std_num_conflicts <- (data$num_conflicts - data$date_mean)/data$date_sd
+data$diff_num_conflicts <- (data$num_conflicts - data$date_mean)
 ```
 
 
@@ -73,6 +74,11 @@ plot2 <- ggplot(data = data, aes(x = datef, y = log(num_conflicts), color = city
     panel.background = element_blank())
 
 plot3 <- ggplot(data = data, aes(x = datef, y = std_num_conflicts, color = city)) + geom_line() +
+  theme(
+    legend.position = "none",
+    panel.background = element_blank())
+
+plot4 <- ggplot(data = data, aes(x = datef, y = diff_num_conflicts, color = city)) + geom_line() +
   theme(
     legend.position = "none",
     panel.background = element_blank())
@@ -104,8 +110,12 @@ png(paste0(images_dir,'summary_num_conflicts_smooth.png'), bg = "transparent", w
 multiplot(plot1, plot2, plot3, cols=3)
 dev.off()
 ```
+
 But added a log(num_conflicts) column given data looks mostly stationary.
 
 ```{r, echo=FALSE, warnings=FALSE, messages=FALSE}
 data$log_num_conflicts <- log(data$num_conflicts)
 ```
+
+In analysis that follows, the apparent stationarity was contradicted. So ultimately, the standardized version is used. The standardized (z-score) is preferred over the difference from the mean, as the difference from the mean was growing for some cities more than others. This phenomena may be a topic of latter study; namely why is conflict growing relative faster in some cities than others, at an apparently accelerated rate.
+
