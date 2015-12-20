@@ -37,7 +37,7 @@ td, th {
   top:50px;
 }
 
-.jumbotron p {
+ol, ul, #objective, .jumbotron p {
   font-size: 16px;
 }
 

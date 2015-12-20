@@ -62,13 +62,18 @@ colnames(boston.df) <- c('actual','fitted','residuals')
 p1 <- ggplot(data=as.data.frame(boston), aes(x=`Boston, MA.day1`, y=`Boston, MA.day0`)) +
   geom_point(colour=rcolors[sample(1:11, 1)]) + 
   geom_line(aes(y=least_sqrs_beta.fitted), colour=rcolors[sample(1:11, 1)], size=1.5) +
-  theme(panel.background = element_blank())
+  theme(panel.background = element_blank()) +
+  ggtitle('Single-Day Lag Effect in Boston, MA') +
+  ylab('Standardized Number of Conflicts on Day 0') +
+  xlab('Single-day Lag')
 
 p2 <- ggplot(boston.df, aes(x=X[,2], y=least_sqrs_beta.residuals)) +
   geom_point(colour=rcolors[sample(1:11, 1)]) +
   theme(panel.background = element_blank()) +
   xlab('Lag') +
-  ggtitle('1-day Lag vs Residuals')
+  ggtitle('1-day Lag vs Residuals') +
+  ylab('Residuals') +
+  xlab('Single-day Lag')
 
 png(paste0(images_dir,'analysis_boston_ex1.png'), bg = "transparent", width=1200, height=600, units='px')
 multiplot(p1, p2, cols=2)

@@ -75,7 +75,11 @@ block content
       h2#autocorr-ex Example of Auto-Correlation in 1 city: Boston
       p A vector auto-regressive matrix was used to regress 1 to n-days worth of lags. These tests were all found to be highly significant, with the first day's lag having the highest impact.
 
-      p Below, first are the results of a 1-day lag regression in one city, Boston, as an example.
+      p Below find the results of a regression of a single-day lag in one city, Boston, as an example.
+
+      p On the left is the data and its regression line: day 0's standardized number of conflicts regressed on the previous day.
+
+      p On the right is a plot of the residuals and the explanatory variable to demonstrate unbiasedness.
 
       br
       img(src='images/analysis_boston_ex1.png')
@@ -88,6 +92,9 @@ block content
       h1#networks Networks: Lasso, SPACE and Geo-Clustering
       h2#basic-lasso Lasso v SPACE Partial Correlation
       p The Lasso-Neighborhood and SPACE algorithms formed partial correlation networks as visualized below.
+      p The SPACE algorithm did a far superior job at identifying hubs. In network theory, it is commonly found hubs exist in most systems. A hub in a network is a vertex which has a much greater number of connections that most other entities.
+      p Each city's network includes the other cities with which it shares an edge and the degree of the vertex is the number of connections for a a given city. The distribution of these vertices' degrees will have a power law distribution if the hub phenomena is present in the network.
+      p In the histograms below the graphs, SPACE is much closer to having a power law distribution than LASSO.
       br
       img(src='images/analysis_network_lasso.png', style='display:inline;margin-right:-15px;')
       img(src='images/analysis_network_space.png', style='display:inline;margin-left:-15px;')
@@ -95,11 +102,11 @@ block content
       img(src='images/analysis_network_lasso_hist.png', style='display:inline;')
       img(src='images/analysis_network_space_hist.png', style='display:inline;')
 
-      br
-      br
+      p 
+        b The (SPACE-estimated) network and it's fit:
       p The level of conflict explained by each cities contemporaneous network as derived using the SPACE algorithm is visualized in the map below.
 
-      p Hover over a city on the map and you will see its network represented by edges and the fit of the network approximated by the R-squared value of the corresponding regrssion.
+      p Hover over a city on the map and you will see its network represented by edges and the fit of the network approximated by the R-squared value of the corresponding regression.
 
       div#network-map
       script(src='javascripts/d3.v3.min.js')
@@ -232,11 +239,13 @@ block content
       
       h1#results Results
       p Using the terms from the auto-regression and network analyses, the first aggregated model fit was:
-      p.code log_num_conflicts ~ 0 + (lag.log_num_conflicts + same_region + region.1 + region.2 + region.3 + region.4 + region.5 + log_population + log_population_sq + isWashingtonDC + weekend)
+      p.code std_num_conflicts ~ 0 + (lag.std_num_conflicts + same_region + region.1 + region.2 + region.3 + region.4 + region.5 + log_population + log_population_sq + isWashingtonDC + weekend)
       
-      p This model had a high level of significance and a high R-squared (see table below). However the region effects were small and did not reflect previous estimations. So a second model was fit without the regions.
+      p This model had a high level of significance and a high R-squared (see table below). However the region effects did not reflect previous estimations. A second model was fit without the regions:
 
-      p.code log_num_conflicts ~ 0 + (lag.log_num_conflicts + log_population + log_population_sq + isWashingtonDC + weekend)
+      p.code std_num_conflicts ~ 0 + (lag.std_num_conflicts + log_population + log_population_sq + isWashingtonDC + weekend)
+
+      p These results were also highly significant and demonstrated a (very) high R-squared. Cross-validation revealed the model is over fit to the data - the R-squared is closer to 0.5 than 0.95.
       br
 
       div.results-table
@@ -253,7 +262,7 @@ block content
             td(colspan='2', style='border-bottom: 1px solid black')
           tr
             td(style='text-align:left')
-            td(colspan='2') log_num_conflicts
+            td(colspan='2') std_num_conflicts
           tr
             td(style='text-align:left')
             td (1)
@@ -261,17 +270,17 @@ block content
           tr
             td(colspan='3', style='border-bottom: 1px solid black')
           tr
-            td(style='text-align:left') lag.log_num_conflicts
+            td(style='text-align:left') lag.std_num_conflicts
             td
-              | 0.591
+              | 0.681
               sup ***
             td
-              | 0.597
+              | 0.755
               sup ***
           tr
             td(style='text-align:left')
-            td (0.003)
-            td (0.003)
+            td (0.002)
+            td (0.002)
           tr
             td(style='text-align:left')
             td
@@ -279,12 +288,12 @@ block content
           tr
             td(style='text-align:left') same_region
             td
-              | -0.160
+              | -1.281
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.012)
+            td (0.037)
             td
           tr
             td(style='text-align:left')
@@ -293,12 +302,12 @@ block content
           tr
             td(style='text-align:left') region.1
             td
-              | -0.010
+              | -1.254
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.004)
+            td (0.040)
             td
           tr
             td(style='text-align:left')
@@ -307,12 +316,12 @@ block content
           tr
             td(style='text-align:left') region.2
             td
-              | 0.049
+              | -1.053
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.005)
+            td (0.034)
             td
           tr
             td(style='text-align:left')
@@ -321,12 +330,12 @@ block content
           tr
             td(style='text-align:left') region.3
             td
-              | 0.101
+              | -1.188
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.008)
+            td (0.037)
             td
           tr
             td(style='text-align:left')
@@ -335,12 +344,12 @@ block content
           tr
             td(style='text-align:left') region.4
             td
-              | 0.066
+              | -1.012
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.007)
+            td (0.031)
             td
           tr
             td(style='text-align:left')
@@ -349,12 +358,12 @@ block content
           tr
             td(style='text-align:left') region.5
             td
-              | -0.039
+              | -1.433
               sup ***
             td
           tr
             td(style='text-align:left')
-            td (0.004)
+            td (0.041)
             td
           tr
             td(style='text-align:left')
@@ -363,15 +372,13 @@ block content
           tr
             td(style='text-align:left') log_population
             td
-              | -0.162
+              | -0.037
               sup ***
             td
-              | -0.176
-              sup ***
           tr
             td(style='text-align:left')
-            td (0.004)
-            td (0.003)
+            td (0.001)
+            td
           tr
             td(style='text-align:left')
             td
@@ -379,15 +386,15 @@ block content
           tr
             td(style='text-align:left') log_population_sq
             td
-              | 0.018
+              | 0.003
               sup ***
             td
-              | 0.018
+              | -0.0001
               sup ***
           tr
             td(style='text-align:left')
-            td (0.0003)
-            td (0.0003)
+            td (0.0001)
+            td (0.00001)
           tr
             td(style='text-align:left')
             td
@@ -395,31 +402,29 @@ block content
           tr
             td(style='text-align:left') isWashingtonDC
             td
-              | 1.617
+              | 2.164
               sup ***
             td
-              | 1.678
+              | 2.041
               sup ***
           tr
             td(style='text-align:left')
-            td (0.031)
-            td (0.030)
+            td (0.022)
+            td (0.020)
           tr
             td(style='text-align:left')
             td
             td
           tr
             td(style='text-align:left') weekend
+            td -0.002
             td
-              | -0.408
-              sup ***
-            td
-              | -0.410
+              | -0.007
               sup ***
           tr
             td(style='text-align:left')
-            td (0.006)
-            td (0.006)
+            td (0.002)
+            td (0.002)
           tr
             td(style='text-align:left')
             td
@@ -434,20 +439,26 @@ block content
             td(style='text-align:left')
               | R
               sup 2
-            td 0.821
-            td 0.821
+            td 0.950
+            td 0.947
           tr
             td(style='text-align:left')
               | Adjusted R
               sup 2
-            td 0.821
-            td 0.821
+            td 0.950
+            td 0.947
           tr
             td(style='text-align:left') Residual Std. Error
-            td 0.817 (df = 85789)
-            td 0.818 (df = 85795)
+            td 0.198 (df = 85789)
+            td 0.202 (df = 85796)
           tr
             td(colspan='3', style='border-bottom: 1px solid black')
+          tr
+            td(style='text-align:left')
+              em Note:
+            td(colspan='2', style='text-align:right')
+              sup *
+              | p
 
       div.results-table(style = 'float: right;')
         h3 Cross-Validation
@@ -461,28 +472,28 @@ block content
             th  Average 
           tr
             td(align='right')  R-squared 
-            td(align='right')  0.62 
-            td(align='right')  0.51 
-            td(align='right')  0.62 
-            td(align='right')  0.53 
-            td(align='right')  0.57 
+            td(align='right')  0.68 
+            td(align='right')  0.33 
+            td(align='right')  0.60 
+            td(align='right')  0.46 
+            td(align='right')  0.52 
           tr
             td(align='right')  Adjusted R-Squared 
-            td(align='right')  0.71 
-            td(align='right')  0.66 
-            td(align='right')  0.71 
-            td(align='right')  0.67 
-            td(align='right')  0.69 
+            td(align='right')  0.68 
+            td(align='right')  0.33 
+            td(align='right')  0.60 
+            td(align='right')  0.46 
+            td(align='right')  0.52 
           tr
             td(align='right')  Mean Squared Error 
-            td(align='right')  0.62 
-            td(align='right')  0.51 
-            td(align='right')  0.62 
-            td(align='right')  0.53 
-            td(align='right')  0.57 
+            td(align='right')  0.06 
+            td(align='right')  0.03 
+            td(align='right')  0.04 
+            td(align='right')  0.03 
+            td(align='right')  0.04  
       br
       div.clearfix
 
       h1#summary Summary
 
-      p Auto-correlation matters, while there is very little evidence to support that distance matters.
+      p While there is very little evidence to support that distance matters, there is strong evidence to support that time matters.

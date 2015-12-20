@@ -8,7 +8,7 @@ output: pdf_document
 
 # Master Table
 
-$log_num_conflicts = lag.log_num_mentions + same_region_avg + other_region_avgs + log_population + log_population_sq + wday$
+$std_num_conflicts = lag.log_num_mentions + same_region_avg + other_region_avgs + log_population + log_population_sq + wday$
 
 ```{r}
 data <- cbind(data, with(data, model.matrix(~ wday + 0)))
@@ -17,8 +17,8 @@ city_data <- merge(city_data, cities[,c('city','regions')], by = 'city')
 city_data <- unique(city_data)
 city_data$isWashingtonDC <- ifelse(city_data$city == 'Washington, D.C., DC', 1, 0)
 
-data2 <- data[,c('log_num_conflicts', 'city', 'datef','wdayweekend')]
-data2 <- dcast(data = data2, formula = datef ~ city, value.var = 'log_num_conflicts', fun.aggregate = sum)
+data2 <- data[,c('std_num_conflicts', 'city', 'datef','wdayweekend')]
+data2 <- dcast(data = data2, formula = datef ~ city, value.var = 'std_num_conflicts', fun.aggregate = sum)
 data2 <- melt(data2, id.vars='datef')
 data2 <- slide(data2, Var = "value", GroupVar = "variable", slideBy = -1)
 
@@ -30,24 +30,23 @@ data2 <- cbind(data2, with(data2, model.matrix(~ wday + 0)))
 
 #install.packages('DataCombine')
 library(DataCombine)
-colnames(data2) <- c('datef','city','log_num_conflicts','lag.log_num_conflicts','wday','weekend','weekday')
+colnames(data2) <- c('datef','city','std_num_conflicts','lag.std_num_conflicts','wday','weekend','weekday')
 
 data3 <- merge(data2, final, by=c('city','datef'))
 
 master.table <- merge(data3, city_data, by='city')
-#head(master.table <- unique(master.table)
 
 
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','same_region', 'region.1', 'region.2', 'region.3', 'region.4', 'region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
+master.table.2 <- master.table[,c('std_num_conflicts','lag.std_num_conflicts','same_region', 'region.1', 'region.2', 'region.3', 'region.4', 'region.5','log_population','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
-m1 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
+m1 <- lm(data = master.table.2, std_num_conflicts ~ 0 + .)
 
-master.table.2 <- master.table[,c('log_num_conflicts','lag.log_num_conflicts','log_population_sq', 'isWashingtonDC','weekend')]
+master.table.2 <- master.table[,c('std_num_conflicts','lag.std_num_conflicts','log_population_sq', 'isWashingtonDC','weekend')]
 master.table.2[is.na(master.table.2)] <- 0
 #head(master.table.2)
-m2 <- lm(data = master.table.2, log_num_conflicts ~ 0 + .)
-summary(m2)
+m2 <- lm(data = master.table.2, std_num_conflicts ~ 0 + .)
+summary(m1)
 #install.packages('stargazer')
 library(stargazer)
 capture.output(stargazer(m1, m2, align=TRUE, type = 'html', omit.stat=c("f")), file = 'summary.html')
@@ -81,15 +80,15 @@ for (i in 1:B) {
   train = master.table.2[ blocks != i, ]
   test = master.table.2[ blocks == i, ]
   
-  # models[[i]] = lm(data = train, log_num_conflicts ~ 0 + .)
+  # models[[i]] = lm(data = train, std_num_conflicts ~ 0 + .)
   beta = ridge.reg(as.matrix(train[,1]), as.matrix(train[,-1]), lambda)
   # prediction = predict(models[[i]], newdata = test)
   prediction = as.matrix(test[,-1]) %*% beta
-  residuals = ( prediction - test$log_num_conflicts)
+  residuals = ( prediction - test$std_num_conflicts)
   
   degrees_freedom = (nrow(test) - 1)/(nrow(test) - (ncol(test)-1) - 1)
   RSS = sum(residuals^2)
-  TSS = sum((mean(test$log_num_conflicts) - test$log_num_conflicts )^2)
+  TSS = sum((mean(test$std_num_conflicts) - test$std_num_conflicts )^2)
   r_squareds[i] = 1 - (RSS/TSS)
   adj_r_squareds[i] = 1 - ( 1 - r_squareds[i])*degrees_freedom
   MSEs[i] = mean(residuals^2)
@@ -105,7 +104,7 @@ mrsqs <- mean(r_squareds)
 marsqs <- mean(adj_r_squareds)
 mmse <- mean(MSEs)
 cond
-mat <- matrix(c(r_squareds, mrsqs, MSEs, mmse,adj_r_squareds, marsqs), ncol=5, nrow=3, byrow = TRUE)
+mat <- matrix(c(r_squareds, mrsqs, adj_r_squareds, marsqs, MSEs, mmse), ncol=5, nrow=3, byrow = TRUE)
 colnames <- c(unlist(lapply('Test ', paste0, 1:4)), 'Average')
 rownames <- c('R-squared', 'Adjusted R-Squared', 'Mean Squared Error')
 dimnames(mat) <- list(rownames, colnames)

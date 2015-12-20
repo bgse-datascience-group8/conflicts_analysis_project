@@ -50,11 +50,6 @@ my.cor <- function(X) {
 
 X.cor <- my.cor(X)
 X.m <- melt(X.cor)
-
-library(corrplot)
-png(paste0(images_dir,'analysis_network_heatmap.png'), bg = "transparent", width=600, height=600, units='px')
-corrplot(X.cor,method = "color", tl.cex = 0.01)
-dev.off()
 ```
 
 ## Neighborhoods
@@ -118,8 +113,8 @@ dimnames(A.hat) <- list(colnames(X), colnames(X))
 g2 <- graph.adjacency(A.hat, weighted=T, mode = 'undirected')
 g2 <- simplify(g2)
 V(g2)$label <- colnames(events_by_date_city)
-V(g2)$label.cex <- (degree(g2) - mean(degree(g2)))/20 + 1
-V(g2)$degree <- degree(g2) + 1
+V(g2)$label.cex <- (degree(g2) - mean(degree(g2)))/100 + 1
+V(g2)$degree <- degree(g2)/2 + 1
 V(g2)$size <- V(g2)$degree
 
 # interactive plot
