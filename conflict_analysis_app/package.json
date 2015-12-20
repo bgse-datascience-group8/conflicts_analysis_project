@@ -15,6 +15,8 @@
     "foreman": "1.4.1",
     "jade": "^1.11.0",
     "jsdom": "^7.1.0",
+    "moment": "^2.10.6",
+    "moment-range": "^2.1.0",
     "morgan": "~1.6.1",
     "mysql": "^2.9.0",
     "serve-favicon": "~2.3.0",

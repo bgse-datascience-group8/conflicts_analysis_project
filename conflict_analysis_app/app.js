@@ -1,12 +1,37 @@
 var express = require('express');
-
 var app = express();
+var fs = require('fs');
+var moment = require('moment');
+var momentRange = require('moment-range');
 
 app.set('view engine', 'jade');
 app.use(express.static('public'));
 
 app.set('views', './views');
 app.set('view engine', 'jade');
+
+var mysql      = require('mysql');
+var connection = mysql.createConnection(process.env.CLEARDB_DATABASE_URL);
+
+connection.connect();
+
+var start = new Date(2013, 6, 1);
+var end = new Date(2015, 11, 6);
+var range = moment.range(start, end);
+
+range.by('days', function(moment) {
+  var sqldate = moment.format('YYYYMMDD')
+  var filedate = moment.format('YYYY-MM-DD')
+  connection.query('select * from city_day_event_counts_plus where SQLDATE = ' + sqldate, function(err, rows, fields) {
+    if (err) throw err;
+    fs.writeFile('public/javascripts/events/' + filedate + '.json', JSON.stringify(rows), function (err) {
+      if (err) throw err;
+      console.log(filedate + ' saved!');
+    });
+  });
+});
+
+connection.end();
 
 app.get('/', function (req, res) {
   res.render('index', {
@@ -16,10 +41,6 @@ app.get('/', function (req, res) {
 
 app.get('/map', function (req, res) {
   res.render('map');
-});
-
-app.get('/network', function (req, res) {
-  res.render('network');
 });
 
 app.get('/summary', function (req, res) {
@@ -37,23 +58,6 @@ app.get('/conclusions', function (req, res) {
 app.get('/about', function (req, res) {
   res.render('about');
 });
-
-// var mysql      = require('mysql');
-// var connection = mysql.createConnection({
-//   host     : 'localhost',
-//   user     : 'root',
-//   password : 'root',
-//   database : 'gdelt'
-// });
-
-// connection.connect();
-
-// // connection.query('select * from top_cities limit 1', function(err, rows, fields) {
-// //   if (err) throw err;
-// //   console.log('The solution is: ', rows[0]);
-// // });
-
-// connection.end();
 
 app.set('port', (process.env.PORT || 5000));
 

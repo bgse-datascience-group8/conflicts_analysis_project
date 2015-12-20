@@ -9,3 +9,5 @@ scp ubuntu@52.17.60.129:~/random_events_dump.sql .
 
 # Dump into local
 mysql -uroot -p gdelt < city_day_event_counts_plus.sql
+
+

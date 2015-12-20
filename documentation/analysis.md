@@ -24,8 +24,6 @@ To study the question `How does conflict spread?`, the analysis includes a study
 
 A vector auto-regressive matrix was used to regress 1 to n-days worth of lags. These tests were all found to be highly significant, with the first day's lag having the highest impact. This effect is repeated for every 7 day window that strengthens our belief that time does have a reliable effect.
 
-[TODO] Some cities' number of conflicts were found to be non-stationary during this analysis. An auto-regressive regression on the differences will be used to address this non-stationarity.
-
 #### Networks
 
 Basic Lasso and the SPACE algorithm were used to explore the partial correlation across cities. Both algorithms exposed cities with a greater number of correlations across the set, and these 'high-influence' cities were often represented in the results of both algorithms. However, SPACE resulted in a power law distribution of the degree of edges and basic lasso did not. There is a natural expectation of a "hub" phenomena in partial correlation analysis that suggests the result of the SPACE algorithm is more realistic.
